@@ -1,0 +1,329 @@
+/* Side Bar */
+.sidebar-button {
+    -fx-background-color: transparent;
+    -fx-padding: 5px;
+}
+.sidebar-button-selected {
+    -fx-background-color: transparent;
+    -fx-padding: 5px;
+    -fx-effect: dropshadow(gaussian, rgba(255, 255, 255, 0.25), 5, 0, 4, 4);
+}
+.sidebar-button:hover {
+    -fx-background-color: rgba(255, 255, 255, 0.1);
+    -fx-effect: dropshadow(gaussian, rgba(255, 255, 255, 0.25), 5, 0, 4, 4);
+    -fx-cursor: hand;
+}
+
+/* Home Page */
+.title{
+    -fx-font-weight: bold;
+    -fx-font-family: "Inter";
+    -fx-font-size: 48px;
+    -fx-text-fill: #EDEDEF;
+}
+.section-button{
+    -fx-text-fill: #EDEDEF;
+    -fx-font-weight: 600;
+    -fx-font-family: "Inter";
+    -fx-font-size: 26px;
+    -fx-background-color: #5042A3;
+    -fx-background-radius: 15px;
+}
+.section-button:hover{
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: bold;
+    -fx-background-color: #705BED;
+}
+.tab-title{
+    -fx-font-family: "Inter";
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #FEFCC2;
+}
+/*.chart {*/
+/*    -fx-text-fill: black;*/
+/*    -fx-tick-label-fill: black;*/
+/*}*/
+/*.axis {*/
+/*    -fx-tick-label-fill: black;*/
+/*    -fx-text-fill: black;*/
+/*}*/
+/*.axis-label {*/
+/*    -fx-text-fill: black;*/
+/*}*/
+.chart-legend {
+    /*-fx-text-fill: black;*/
+    -fx-background-color: transparent;
+    -fx-padding: 5;
+    -fx-legend-side: right;
+}
+.chart-legend-item {
+    /* -fx-text-fill: black;*/
+}
+.chart-horizontal-grid-lines {
+    -fx-stroke: white;
+
+}
+/*.chart-horizontal-minor-grid-lines {*/
+/*    -fx-stroke: white;*/
+/*    -fx-stroke-width: 1px;*/
+/*}*/
+.chart-bar.series0 {
+    -fx-bar-fill: #E0440E; /* Software Engineers */
+}
+.chart-bar.series1 {
+    -fx-bar-fill: #7B4B94; /* Doctors */
+}
+
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+}
+.scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+.scroll-bar:vertical {
+    -fx-background-color: transparent;
+}
+.scroll-bar:vertical .thumb {
+    -fx-background-color: #7B4B94;
+}
+/* Companies Page */
+.company-name-button {
+    -fx-pref-height: 38px;
+    -fx-font-family: "Inter";
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #252C48;
+    -fx-background-color: #BBDBFF;
+    -fx-background-radius: 10px;
+    -fx-padding: 6px 19px;
+}
+.company-status-button {
+    -fx-pref-height: 36px;
+    -fx-font-family: "Inter";
+    -fx-font-size: 14px;
+    -fx-font-weight: normal;
+    -fx-text-fill: #252C48;
+    -fx-background-color: #D9D9D9;
+    -fx-background-radius: 10px;
+    -fx-padding: 13px 20px;
+}
+.company-stroke {
+    -fx-border-color: #D9D9D9;
+    -fx-border-width: 4px;
+    -fx-border-style: solid;
+    -fx-border-radius: 15px;
+}
+.financial-chip {
+    -fx-alignment: center;
+    -fx-background-color: rgba(255, 255, 255, 0.55);
+    -fx-background-radius: 20px;
+    -fx-padding: 8px;
+    -fx-pref-width: 105px;
+}
+.label-chip-title {
+    -fx-font-family: 'Inter';
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-underline: true;
+    -fx-text-fill: #252C48;
+}
+.label-chip-content {
+    -fx-font-family: "Inter"; /* Sets the font family */
+    -fx-font-weight: normal; /* Sets the font weight to normal */
+    -fx-font-size: 12px; /* Sets the font size */
+    -fx-text-fill: white; /* Sets the text color */
+}
+.rating-chip {
+    -fx-alignment: center-left;
+    -fx-background-color: #D9D9D9;
+    -fx-background-radius: 15;
+    -fx-padding: 13 15 13 15;
+}
+.rating-chip-title {
+    -fx-font-family: "Inter";
+    -fx-font-weight: normal;
+    -fx-font-size: 12px;
+    -fx-text-fill: #252C48;
+    -fx-underline: true;
+}
+.rating-chip-content {
+    -fx-font-family: "Inter";
+    -fx-font-weight: normal;
+    -fx-font-size: 12px;
+    -fx-text-fill: #FF9D00;
+}
+
+/* Job Offers Page */
+.job-card {
+    -fx-background-color: #272B4A;
+    -fx-background-radius: 15;
+    -fx-cursor: hand;
+}
+.job-card-selected{
+    -fx-background-color: linear-gradient(from 0% 0% to 100% 100%, #272B4A, #525FC5);
+    -fx-background-radius: 15;
+    -fx-border-width: 2px;
+    -fx-border-radius: 15px;
+    -fx-border-color: #7B4B94;
+    /*-fx-effect: dropshadow(gaussian, rgb(255, 255, 255), 16, 0, 1, 2);*/
+}
+
+.job-card:hover {
+    -fx-background-color: #3D468D;
+    -fx-effect: dropshadow(gaussian, rgb(255, 255, 255), 5, 0, 1, 2);
+}
+/* Search Section */
+.filter{
+    -fx-background-color: #7B4B94;
+    -fx-background-radius: 15px;
+    -fx-pref-width: 227;
+    -fx-pref-height: 67;
+    -fx-font-size: 20;
+    -fx-font-family: "Inter";
+    -fx-text-fill: white;
+}
+.filter .list-cell {
+    -fx-text-fill: white;            /* Text color of items in the dropdown */
+    -fx-background-color: #7B4B94;    /* Default background color of dropdown items */
+}
+.filter .list-cell:hover {
+    -fx-text-fill: white;            /* Text color of items in the dropdown */
+    -fx-background-color: #D08CF3;    /* Default background color of dropdown items */
+}
+.combo-box-popup .list-cell:selected {
+    -fx-background-color: #D08CF3;  /* Background color of selected item */
+    -fx-text-fill: white;           /* Text color of the selected item */
+}
+
+
+/* Job Offer Details */
+.details-title {
+    -fx-font-family: "Inter";
+    -fx-font-size: 36px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #F6F6F6;
+}
+.details-company {
+    -fx-font-family: "Inter";
+    -fx-font-size: 16px;
+    -fx-text-fill: #f1f1f1;
+    -fx-font-weight: 300;
+}
+details-location{
+    -fx-font-family: "Inter";
+    -fx-font-size: 16px;
+    -fx-text-fill: #f6f6f6;
+    -fx-font-weight: 300;
+}
+.details-button{
+    -fx-text-fill: #3D3A4B;
+    -fx-font-weight: bold;
+    -fx-font-family: "Inter";
+    -fx-font-size: 18px;
+    -fx-background-color: #FEFCC2;
+    -fx-background-radius: 10px;
+}
+.details-button:hover{
+    -fx-background-color: #f3f17c;
+    -fx-background-radius: 10px;
+    -fx-effect: dropshadow(gaussian, #9adad8, 15, 0, 0, 0);
+}
+.details-button-bookmark-unsaved{
+    -fx-background-color: #7B4B94;
+    -fx-background-radius: 5px;
+    -fx-content-display: CENTER;
+}
+.details-button-bookmark-saved{
+    -fx-background-color: #CA5656;
+    -fx-background-radius: 5px;
+    -fx-content-display: CENTER;
+}
+.details-button-bookmark-unsaved:hover{
+    -fx-background-color: #CA5656;
+    -fx-background-radius: 5px;
+    -fx-effect: dropshadow(gaussian, #e39999, 15, 0, 0, 0);
+    -fx-cursor: hand;
+    -fx-content-display: CENTER;
+}
+.details-button-bookmark-saved:hover{
+    -fx-background-color: #d52e2e;
+    -fx-background-radius: 5px;
+    -fx-cursor: hand;
+    -fx-content-display: CENTER;
+}
+.jobDetail {
+    -fx-background-color: linear-gradient(from 0% 50% to 100% 50%, #c588ed, #7B4B94);
+    -fx-background-radius: 10px;
+    -fx-padding: 5px;
+}
+
+.titled-pane > .title {
+    -fx-font-family: "Inter";
+    -fx-text-fill: #F1F1F1;
+    -fx-font-weight: bold;
+    -fx-font-size: 22px;
+    -fx-padding:  19px 16px 12px 16px;
+    -fx-border-color: transparent;
+    -fx-border-width: 0px;
+    -fx-background-color: #7B4B94;
+}
+.titled-pane{
+    -fx-background-color: #7B4B94;
+    -fx-text-fill: #F1F1F1;
+}
+.titled-pane .content {
+    -fx-padding: 18px 18px 20px 18px; /* Adds padding around the content */
+    -fx-alignment: center-left;
+    -fx-background-color: #E9E9E9;
+}
+
+
+.job-card-bookmark-saved {
+    -fx-background-radius: 50%;  /* Make it perfectly circular */
+    -fx-background-color: #CA5656;
+    -fx-background-insets: 0;
+    -fx-padding: 0;  /* Remove padding */
+    -fx-content-display: CENTER;  /* Center the icon */
+}
+
+.job-card-bookmark-unsaved {
+    -fx-background-radius: 50%;  /* Make it perfectly circular */
+    -fx-background-color: #F1F1F1;
+    -fx-background-insets: 0;
+    -fx-padding: 0;  /* Remove padding */
+    -fx-content-display: CENTER;  /* Center the icon */
+}
+.skills{
+    -fx-font-family: "Inter";
+    -fx-text-fill: #000000;
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+    -fx-underline: true;
+}
+.section-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-padding: 10;
+}
+
+
+.chart-pie-label {
+    -fx-fill: white;
+}
+
+.chart-legend {
+    -fx-background-color: transparent;
+}
+
+.chart-legend-item {
+    -fx-text-fill: white;
+}
+
+.chart-pie {
+    -fx-border-color: derive(-fx-pie-color, -40%);
+}
+
+
+
