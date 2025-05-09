@@ -1,7 +1,12 @@
-package com.example.jobseeker;
+package com.example.jobseeker.util;
+
+import com.example.jobseeker.model.Education;
+import com.example.jobseeker.model.Experience;
+import com.example.jobseeker.model.Location;
+import com.example.jobseeker.model.Company;
+import com.example.jobseeker.model.JobOffer;
 
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.*;
 
 public class DatabaseUtil {
@@ -397,4 +402,5 @@ public class DatabaseUtil {
         }
         return companies;
     }
+
 }

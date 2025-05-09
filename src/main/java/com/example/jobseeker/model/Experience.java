@@ -1,4 +1,4 @@
-package com.example.jobseeker;
+package com.example.jobseeker.model;
 
 public class Experience{
     private final int minYears;

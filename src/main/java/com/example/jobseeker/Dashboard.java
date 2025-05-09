@@ -1,5 +1,12 @@
 package com.example.jobseeker;
 
+import com.example.jobseeker.dao.CompanyDAO;
+import com.example.jobseeker.model.JobOffer;
+import com.example.jobseeker.util.DatabaseUtil;
+import com.example.jobseeker.view.CompaniesPage;
+import com.example.jobseeker.view.HomePage;
+import com.example.jobseeker.view.StatisticsPage;
+import com.example.jobseeker.viewmodel.CompanyViewModel;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -16,6 +23,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -31,14 +40,13 @@ public class Dashboard extends Application {
 
     @Override
     public void start(Stage stage) throws SQLException {
+        Connection connection = DatabaseUtil.getConnection();
+        CompanyDAO companyDAO = new CompanyDAO(connection);
+        CompanyViewModel companyViewModel = new CompanyViewModel(companyDAO);
+
         pages = new HashMap<>();
         pages.put("Home", new HomePage(this));
-        try{
-            pages.put("Companies", new CompaniesPage(this));
-        }catch(SQLException e){
-            e.printStackTrace();
-        }
-
+        pages.put("Companies", new CompaniesPage(this, companyViewModel));
         pages.put("Job Offers", new JobOffersPage(this));
         pages.put("Statistics", new StatisticsPage(this));
         pages.put("Saved Job Offers", new BookmarkedJobOffersPage(this));

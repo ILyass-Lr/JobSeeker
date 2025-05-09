@@ -1,8 +1,10 @@
-package com.example.jobseeker;
+package com.example.jobseeker.view;
+import com.example.jobseeker.Dashboard;
+import com.example.jobseeker.Page;
+import com.example.jobseeker.SectorCarousel;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
-import javafx.scene.LightBase;
 import javafx.scene.chart.BarChart;
 import javafx.scene.chart.CategoryAxis;
 import javafx.scene.chart.NumberAxis;

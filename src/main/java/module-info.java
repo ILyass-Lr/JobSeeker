@@ -7,4 +7,10 @@ module com.example.jobseeker {
 
     opens com.example.jobseeker to javafx.fxml;
     exports com.example.jobseeker;
+    exports com.example.jobseeker.model;
+    opens com.example.jobseeker.model to javafx.fxml;
+    exports com.example.jobseeker.view;
+    opens com.example.jobseeker.view to javafx.fxml;
+    exports com.example.jobseeker.util;
+    opens com.example.jobseeker.util to javafx.fxml;
 }

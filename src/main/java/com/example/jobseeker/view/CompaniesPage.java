@@ -1,5 +1,9 @@
-package com.example.jobseeker;
+package com.example.jobseeker.view;
 
+import com.example.jobseeker.Dashboard;
+import com.example.jobseeker.JobOffersPage;
+import com.example.jobseeker.model.Company;
+import com.example.jobseeker.viewmodel.CompanyViewModel;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -13,16 +17,14 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 public class CompaniesPage extends VBox {
     private final int ITEMS_PER_PAGE = 15;
     private int currentPage = 1;
     private HBox pagination;
-    private List<Company> companies;
-    private Company selectedCompany;
+    //private List<Company> companies;
+
     private VBox selectedCompanyVBox;
     private ScrollPane scrollPane;
     private VBox detailsContainer;
@@ -30,14 +32,21 @@ public class CompaniesPage extends VBox {
     private GridPane companiesGrid;
     private Dashboard dashboard;
 
-    public CompaniesPage(Dashboard dashboard) throws SQLException {
-        companies = DatabaseUtil.getAllCompanies();
-        selectedCompany = companies.getFirst();
+    private final CompanyViewModel viewModel;
+
+    public CompaniesPage(Dashboard dashboard, CompanyViewModel viewModel) throws SQLException {
+        this.viewModel = viewModel;
         this.dashboard = dashboard;
-        initialize();
+        try{
+            viewModel.loadCompanies();
+            initialize();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void initialize() {
+        // UI setup code remains similar but uses ViewModel
         setSpacing(20);
         setAlignment(Pos.TOP_CENTER);
         setPadding(new Insets(10,114,10,114));
@@ -50,7 +59,6 @@ public class CompaniesPage extends VBox {
         searchField = new TextField();
         pagination = new HBox(10);
 
-
         // Create main content section
         HBox mainContent = new HBox(20);
         mainContent.setPrefHeight(1000);
@@ -58,27 +66,34 @@ public class CompaniesPage extends VBox {
 
         // Create scrollable companies grid
         scrollPane = new ScrollPane();
-//        scrollPane.setFitToWidth(true);
-//        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-//        scrollPane.setPrefWidth(711);
-        //scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
-
-
-
-        scrollPane.setContent(companiesGrid);
-
-        // Create details section
         detailsContainer = createDetailsSection();
         updatePaginationControls();
+
         mainContent.getChildren().addAll(createCompaniesListingsSection(), detailsContainer);
-        if (!companies.isEmpty()) {
-            selectedCompanyVBox = createCompanyCard(companies.getFirst(), true);
+
+        // Set up listeners for ViewModel changes
+        viewModel.selectedCompanyProperty().addListener((obs, oldCompany, newCompany) -> {
+            if (newCompany != null) {
+                updateDetailsSection();
+            }
+        });
+
+        viewModel.currentPageProperty().addListener((obs, oldPage, newPage) -> {
+            updateCompanyGrid();
+            updatePaginationControls();
+        });
+
+        // Initialize UI with first company if available
+        if (!viewModel.getCompanies().isEmpty()) {
+            Company firstCompany = viewModel.getCompanies().getFirst();
+
+            viewModel.selectCompany(firstCompany);
+            selectedCompanyVBox = createCompanyCard(firstCompany, true);
             selectedCompanyVBox.getStyleClass().add("company-stroke");
         }
 
         updateCompanyGrid();
         getChildren().addAll(createSearchSection(), mainContent);
-
     }
 
     private ScrollPane createCompaniesListingsSection() {
@@ -106,37 +121,22 @@ public class CompaniesPage extends VBox {
 
     protected void updatePaginationControls() {
         Platform.runLater(() -> {
-            int totalPages = (int) Math.ceil((double) companies.size() / ITEMS_PER_PAGE);
-
-            if (currentPage < 1) currentPage = 1;
-            if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
-
             pagination.getChildren().clear();
             pagination.setAlignment(Pos.CENTER);
 
             Button prevButton = new Button("<");
             Button nextButton = new Button(">");
-            Label pageLabel = new Label(String.format("%d/%d", currentPage, Math.max(totalPages, 1)));
+            Label pageLabel = new Label(String.format("%d/%d",
+                    viewModel.getCurrentPage(), viewModel.getTotalPages()));
 
             pageLabel.setFont(Font.font("Inter", FontWeight.BOLD, 12));
             pageLabel.setStyle("-fx-text-fill: white;");
 
-            prevButton.setDisable(currentPage <= 1);
-            nextButton.setDisable(currentPage >= totalPages);
+            prevButton.setDisable(viewModel.getCurrentPage() <= 1);
+            nextButton.setDisable(viewModel.getCurrentPage() >= viewModel.getTotalPages());
 
-            prevButton.setOnAction(_ -> {
-                if (currentPage > 1) {
-                    currentPage--;
-                    updateCompanyGrid(); // Add this line
-                }
-            });
-
-            nextButton.setOnAction(_ -> {
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    updateCompanyGrid(); // Add this line
-                }
-            });
+            prevButton.setOnAction(_ -> viewModel.previousPage());
+            nextButton.setOnAction(_ -> viewModel.nextPage());
 
             prevButton.setStyle("-fx-background-color: #C9C7C7; -fx-text-fill: #615E5E;");
             nextButton.setStyle("-fx-background-color: #C9C7C7; -fx-text-fill: #615E5E;");
@@ -189,9 +189,9 @@ public class CompaniesPage extends VBox {
         hbox.getChildren().addAll(icon, searchField);
 
         searchField.setOnAction(e -> {
-            // Implement search functionality
             try {
-                filterCompanies(searchField.getText());
+                viewModel.searchCompanies(searchField.getText());
+                updateCompanyGrid();
             } catch (SQLException ex) {
                 throw new RuntimeException(ex);
             }
@@ -345,7 +345,8 @@ public class CompaniesPage extends VBox {
             }
 
             // Update selection and add stroke
-            selectedCompany = company;
+            viewModel.selectCompany(company);
+
             selectedCompanyVBox = selectedCompanyCard;
             selectedCompanyVBox.getStyleClass().add("company-stroke");
 
@@ -434,20 +435,20 @@ public class CompaniesPage extends VBox {
     }
 
     private void updateDetailsSection() {
-        if (selectedCompany == null) return;
+        if (viewModel.getSelectedCompany() == null) return;
 
         Platform.runLater(() -> {
             detailsContainer.getChildren().clear();
 
             // Company name
-            Button companyName = new Button(selectedCompany.getName());
+            Button companyName = new Button(viewModel.getSelectedCompany().getName());
             companyName.getStyleClass().add("company-name-button");
             VBox.setMargin(companyName, new Insets(25, 5, 25, 5));
 
             // CSR section
             TitledPane csrSection = new TitledPane();
             csrSection.setText("Corporate Social \nResponsibility \ninitiatives");
-            Text csrText = new Text((selectedCompany.getCsrInitiatives() == null) ? "" : selectedCompany.getCsrInitiatives());
+            Text csrText = new Text((viewModel.getSelectedCompany().getCsrInitiatives() == null) ? "" : viewModel.getSelectedCompany().getCsrInitiatives());
             csrText.setFill(Color.BLACK);
             csrText.setWrappingWidth(243);
             csrSection.setContent(csrText);
@@ -456,7 +457,7 @@ public class CompaniesPage extends VBox {
             // Benefits section
             TitledPane benefitsSection = new TitledPane();
             benefitsSection.setText("Benefits provided");
-            Text benefitsText = new Text((selectedCompany.getBenefits()== null) ? "" : selectedCompany.getBenefits());
+            Text benefitsText = new Text((viewModel.getSelectedCompany().getBenefits()== null) ? "" : viewModel.getSelectedCompany().getBenefits());
             benefitsText.setFill(Color.BLACK);
             benefitsText.setWrappingWidth(243);
             benefitsSection.setContent(benefitsText);
@@ -468,7 +469,7 @@ public class CompaniesPage extends VBox {
             checkJobsButton.setPrefHeight(44);
             checkJobsButton.getStyleClass().add("details-button");
             checkJobsButton.onActionProperty().set(event -> {
-                ((JobOffersPage)(Dashboard.pages.get("Job Offers"))).applyExternalFilter(selectedCompany.getName());
+                ((JobOffersPage)(Dashboard.pages.get("Job Offers"))).applyExternalFilter(viewModel.getSelectedCompany().getName());
                 dashboard.switchPage("Job Offers");
                 dashboard.resetSideBar("Job Offers");
             });
@@ -487,40 +488,32 @@ public class CompaniesPage extends VBox {
         Platform.runLater(() -> {
             companiesGrid.getChildren().clear();
 
-            int startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
-            int endIdx = Math.min(startIdx + ITEMS_PER_PAGE, companies.size());
 
-            if (startIdx >= companies.size()) {
-                currentPage = 1;
-                startIdx = 0;
-                endIdx = Math.min(ITEMS_PER_PAGE, companies.size());
-            }
 
             // First item spans full width only on first page
-            if (currentPage == 1 && !companies.isEmpty()) {
-                Company firstCompany = companies.get(0);
+            if (viewModel.getCurrentPage() == 1 && !viewModel.getCompanies().isEmpty()) {
+                Company firstCompany = viewModel.getCompanies().getFirst();
                 VBox firstCard = createCompanyCard(firstCompany, true);
 
                 // If this is the selected company, add the stroke effect
-                if (firstCompany.equals(selectedCompany)) {
+                if (firstCompany.equals(viewModel.getSelectedCompany())) {
                     selectedCompanyVBox = firstCard;
                     firstCard.getStyleClass().add("company-stroke");
                 }
 
                 GridPane.setColumnSpan(firstCard, 2);
                 companiesGrid.add(firstCard, 0, 0);
-                startIdx = 1;
+
             }
 
             // Add remaining items in a 2-column grid
             int row = (currentPage == 1) ? 1 : 0;
             int col = 0;
-            for (int i = startIdx; i < endIdx; i++) {
-                Company company = companies.get(i);
+            for (Company company : viewModel.getCurrentPageCompanies() ) {
                 VBox card = createCompanyCard(company, false);
 
                 // If this is the selected company, add the stroke effect
-                if (company.equals(selectedCompany)) {
+                if (company.equals(viewModel.getSelectedCompany())) {
                     selectedCompanyVBox = card;
                     card.getStyleClass().add("company-stroke");
                 }
@@ -532,22 +525,5 @@ public class CompaniesPage extends VBox {
 
             updatePaginationControls();
         });
-    }
-
-    private void filterCompanies(String searchText) throws SQLException {
-        if (searchText == null || searchText.trim().isEmpty()) {
-            companies = DatabaseUtil.getAllCompanies();
-        } else {
-            searchText = searchText.toLowerCase();
-            final String searchQuery = searchText;
-            companies = DatabaseUtil.getAllCompanies().stream()
-                    .filter(company ->
-                            company.getName().toLowerCase().contains(searchQuery) ||
-                                    company.getIndustry().toLowerCase().contains(searchQuery) ||
-                                    company.getHeadquartersCity().toLowerCase().contains(searchQuery))
-                    .toList();
-        }
-        currentPage = 1;
-        updateCompanyGrid();
     }
 }

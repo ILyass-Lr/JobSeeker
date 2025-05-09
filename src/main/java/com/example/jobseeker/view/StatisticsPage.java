@@ -1,5 +1,9 @@
-package com.example.jobseeker;
+package com.example.jobseeker.view;
 
+import com.example.jobseeker.Dashboard;
+import com.example.jobseeker.Page;
+import com.example.jobseeker.model.JobOffer;
+import com.example.jobseeker.util.DatabaseUtil;
 import javafx.application.Platform;
 import javafx.scene.chart.*;
 import javafx.geometry.Insets;

@@ -1,5 +1,6 @@
 package com.example.jobseeker;
 
+import com.example.jobseeker.model.JobOffer;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
