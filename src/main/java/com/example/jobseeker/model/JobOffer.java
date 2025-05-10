@@ -19,9 +19,6 @@ public class JobOffer {
     private List<String> hardSkills;
     private List<String> softSkills;
     private Map<String,String> languages;
-
-
-
     private final String contractType;
     private final String description;
     private final LocalDateTime publishDate;

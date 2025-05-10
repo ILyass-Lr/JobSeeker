@@ -17,147 +17,10 @@ public class DatabaseUtil {
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(URL, USER, PASSWORD);
     }
-    ///  /////////
-    public static List<JobOffer> getAllJobOffers() throws SQLException {
-        List<JobOffer> offers = new ArrayList<>();
-        String sql = """
-        SELECT DISTINCT 
-            j.id, j.title, j.description, j.requirements, j.contract, j.telework,
-            j.salary, j.industry, j.post_date, j.deadline,
-            e.elevel as edu_level, e.field as edu_field, e.diploma,
-            ex.min_years, ex.max_years, ex.exlevel as exp_level, ex.description as exp_description,
-            l.city, l.region, l.country, l.address,
-            c.name as company_name
-        FROM job_posts j
-        LEFT JOIN job_education e ON j.id = e.job_post_id
-        LEFT JOIN job_experience ex ON j.id = ex.job_post_id
-        LEFT JOIN job_locations l ON j.id = l.job_post_id
-        LEFT JOIN companies c ON j.company = c.id
-        ORDER BY j.post_date DESC
-    """;
 
-        try (Connection conn = getConnection()) {
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                try (ResultSet rs = stmt.executeQuery()) {
-                    while (rs.next()) {
-                        JobOffer offer = createJobOfferFromResultSet(rs);
-                        loadAdditionalData(conn, offer);
-                        offers.add(offer);
-                    }
-                }
-            }
-        }
-        return offers;
-    }
 
-    private static void loadAdditionalData(Connection conn, JobOffer offer) throws SQLException {
-        int jobId = offer.getId();
-        offer.getHardSkills().addAll(getHardSkills(conn, jobId));
-        offer.getSoftSkills().addAll(getSoftSkills(conn, jobId));
-        offer.getLanguages().putAll(getLanguages(conn, jobId));
-    }
 
-    private static List<String> getHardSkills(Connection conn, int jobId) throws SQLException {
-        List<String> skills = new ArrayList<>();
-        String sql = "SELECT skill_name FROM job_hard_skills WHERE job_post_id = ?";
 
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, jobId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    String skillName = rs.getString("skill_name");
-                    if (skillName != null) {
-                        skills.add(skillName);
-                    }
-                }
-            }
-        }
-        return skills;
-    }
-
-    private static List<String> getSoftSkills(Connection conn, int jobId) throws SQLException {
-        List<String> skills = new ArrayList<>();
-        String sql = "SELECT skill_name FROM job_soft_skills WHERE job_post_id = ?";
-
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, jobId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    String skillName = rs.getString("skill_name");
-                    if (skillName != null) {
-                        skills.add(skillName);
-                    }
-                }
-            }
-        }
-        return skills;
-    }
-
-    private static Map<String, String> getLanguages(Connection conn, int jobId) throws SQLException {
-        Map<String, String> languages = new HashMap<>();
-        String sql = "SELECT language_name, proficiency_level FROM job_languages WHERE job_post_id = ?";
-
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, jobId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    String langName = rs.getString("language_name");
-                    String profLevel = rs.getString("proficiency_level");
-                    if (langName != null && profLevel != null) {
-                        languages.put(langName, profLevel);
-                    }
-                }
-            }
-        }
-        return languages;
-    }
-
-    private static JobOffer createJobOfferFromResultSet(ResultSet rs) throws SQLException {
-        Location location = new Location(
-                rs.getString("city"),
-                rs.getString("region"),
-                rs.getString("country"),
-                rs.getString("address")
-        );
-
-        Education education = new Education(
-                rs.getInt("edu_level"),
-                rs.getString("edu_field"),
-                rs.getString("diploma")
-        );
-
-        Experience experience = new Experience(
-                rs.getInt("min_years"),
-                rs.getInt("max_years"),
-                rs.getString("exp_level"),
-                rs.getString("exp_description")
-        );
-
-        Timestamp postDate = rs.getTimestamp("post_date");
-        Timestamp deadline = rs.getTimestamp("deadline");
-
-        return new JobOffer(
-                rs.getInt("id"),
-                rs.getString("title"),
-                rs.getString("company_name"),
-                location,
-                education,
-                experience,
-                rs.getString("contract"),
-                new ArrayList<>(),  // Will be populated later
-                new ArrayList<>(),  // Will be populated later
-                new HashMap<>(),    // Will be populated later
-                rs.getString("description"),
-                postDate != null ? postDate.toLocalDateTime() : null,
-                rs.getString("salary"),
-                rs.getString("requirements"),
-                rs.getString("industry"),
-                false,  // isSaved is not stored in the database
-                rs.getString("telework"),
-                deadline != null ? deadline.toLocalDateTime() : null
-        );
-    }
-    ///  /////
 
 
 
@@ -283,55 +146,9 @@ public class DatabaseUtil {
         }
     }
 
-    ///  COMPANIES
-    public static List<Company> getAllCompanies() throws SQLException {
-        List<Company> companies = new ArrayList<>();
-        String sql = """
-    SELECT 
-        id, name, type, industry, status, founded_year, 
-        csize as "size", revenue, 
-        headquarters_city, headquarters_region, headquarters_country,
-        number_of_offices, remote_work_policy,
-        glassdoor_rating, employee_retention_rate,
-        benefits, csr_initiatives
-    FROM companies
-    ORDER BY name ASC
-""";
 
-        try (Connection conn = getConnection()) {
-            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-                try (ResultSet rs = stmt.executeQuery()) {
-                    while (rs.next()) {
-                        Company company = createCompanyFromResultSet(rs);
-                        companies.add(company);
-                    }
-                }
-            }
-        }
-        return companies;
-    }
 
-    private static Company createCompanyFromResultSet(ResultSet rs) throws SQLException {
-        return new Company(
-                rs.getLong("id"),
-                rs.getString("name"),
-                rs.getString("type"),
-                rs.getString("industry"),
-                rs.getString("status"),
-                getIntegerFromResultSet(rs, "founded_year"),
-                rs.getString("size"),
-                rs.getString("revenue"),
-                rs.getString("headquarters_city"),
-                rs.getString("headquarters_region"),
-                rs.getString("headquarters_country"),
-                getIntegerFromResultSet(rs, "number_of_offices"),
-                rs.getString("remote_work_policy"),
-                getDoubleFromResultSet(rs, "glassdoor_rating"),
-                getDoubleFromResultSet(rs, "employee_retention_rate"),
-                rs.getString("benefits"),
-                rs.getString("csr_initiatives")
-        );
-    }
+
 
     // Méthodes utilitaires pour gérer les valeurs NULL dans la base de données
     private static Integer getIntegerFromResultSet(ResultSet rs, String columnName) throws SQLException {
@@ -344,63 +161,5 @@ public class DatabaseUtil {
         return rs.wasNull() ? null : value;
     }
 
-    // Méthode optionnelle pour récupérer une entreprise par son ID
-    public static Company getCompanyById(Long companyId) throws SQLException {
-        String sql = """
-        SELECT 
-            id, name, type, industry, status, founded_year, 
-            csize as size, revenue, 
-            headquarters_city, headquarters_region, headquarters_country,
-            number_of_offices, remote_work_policy,
-            glassdoor_rating, employee_retention_rate,
-            benefits, csr_initiatives
-        FROM companies
-        WHERE id = ?
-    """;
-
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setLong(1, companyId);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return createCompanyFromResultSet(rs);
-                }
-                return null;
-            }
-        }
-    }
-
-    // Méthode optionnelle pour rechercher des entreprises par nom
-    public static List<Company> searchCompaniesByName(String searchTerm) throws SQLException {
-        List<Company> companies = new ArrayList<>();
-        String sql = """
-        SELECT 
-            id, name, type, industry, status, founded_year, 
-            csize as size, revenue, 
-            headquarters_city, headquarters_region, headquarters_country,
-            number_of_offices, remote_work_policy,
-            glassdoor_rating, employee_retention_rate,
-            benefits, csr_initiatives
-        FROM companies
-        WHERE LOWER(name) LIKE LOWER(?)
-        ORDER BY name ASC
-    """;
-
-        try (Connection conn = getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, "%" + searchTerm + "%");
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    Company company = createCompanyFromResultSet(rs);
-                    companies.add(company);
-                }
-            }
-        }
-        return companies;
-    }
 
 }

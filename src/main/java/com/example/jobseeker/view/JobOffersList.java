@@ -1,6 +1,7 @@
-package com.example.jobseeker;
+package com.example.jobseeker.view;
 
 import com.example.jobseeker.model.JobOffer;
+import com.example.jobseeker.viewmodel.JobOfferViewModel;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -17,24 +18,26 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import java.awt.Desktop;
 import java.net.URI;
+import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 abstract class JobOffersList extends VBox {
     protected final int ITEMS_PER_PAGE = 15;
     protected int currentPage = 1;
-    protected List<JobOffer> filteredOffers;
+    //protected List<JobOffer> filteredOffers;
     protected VBox selectedCard = null;
-    protected JobOffer selectedJobOffer;
+    //protected JobOffer selectedJobOffer;
     protected ScrollPane listingContainer;
     protected VBox detailsContainer;
     protected String message;
     protected VBox listingVBox;
     protected HBox pagination;
-    protected JobOffersList(String message){
+
+    protected JobOfferViewModel viewModel;
+    protected JobOffersList(String message, JobOfferViewModel jobOfferViewModel) throws SQLException {
+        this.viewModel = jobOfferViewModel;
         pagination = new HBox(10);
         setAlignment(Pos.TOP_CENTER);
         setMinHeight(1024);
@@ -42,7 +45,7 @@ abstract class JobOffersList extends VBox {
         setPadding(new Insets(39, 103, 39, 103));
         setSpacing(38);
         setBackground(new Background(new BackgroundFill(Color.web("#D7FDF0"), CornerRadii.EMPTY, Insets.EMPTY)));
-        filteredOffers = new ArrayList<>(Dashboard.masterJobOffersList);
+        viewModel.loadJobOffers();
         initializeData();
         listingContainer = createJobListingsSection();
         detailsContainer = new VBox();
@@ -53,8 +56,9 @@ abstract class JobOffersList extends VBox {
 
         initialize();
         Platform.runLater(() -> {
-            if (!filteredOffers.isEmpty()) {
-                JobOffer firstOffer = filteredOffers.getFirst();
+            if (!viewModel.getJobOffers().isEmpty()) {
+                System.out.println("Test: " + viewModel.getJobOffers().get(0).getTitle());
+                JobOffer firstOffer = jobOfferViewModel.getJobOffers().getFirst();
                 VBox firstCard = createJobCard(firstOffer);
                 selectJobOffer(firstOffer, firstCard);
                 updateJobListings();
@@ -63,10 +67,10 @@ abstract class JobOffersList extends VBox {
             }
         });
     }
-    protected abstract void initializeData();
+    protected abstract void initializeData() throws SQLException;
     protected abstract void initialize();
-    protected abstract void handleSaveButton(Button save, Button bookmark);
-
+    protected abstract void handleSaveButton(Button save, Button bookmark) throws SQLException;
+    protected abstract void updateJobListings();
     private ScrollPane createJobListingsSection() {
         ScrollPane listingsSectionPane = new ScrollPane();
         listingsSectionPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
@@ -90,7 +94,7 @@ abstract class JobOffersList extends VBox {
 
     protected void updatePaginationControls() {
         Platform.runLater(() -> {
-            int totalPages = (int) Math.ceil((double) filteredOffers.size() / ITEMS_PER_PAGE);
+            int totalPages = (int) Math.ceil((double) viewModel.getJobOffers().size() / ITEMS_PER_PAGE);
 
             if (currentPage < 1) currentPage = 1;
             if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
@@ -206,7 +210,6 @@ abstract class JobOffersList extends VBox {
         });
         return card;
     }
-
     protected void selectJobOffer(JobOffer offer, VBox card) {
         if (offer == null) return;
         if (selectedCard != null) {
@@ -222,22 +225,22 @@ abstract class JobOffersList extends VBox {
                 selectedCard = card;
             });
         }
-        selectedJobOffer = offer;
+        viewModel.selectJobOffer(offer);
         updateJobDetails();
     }
     protected void updateJobDetails() {
 
-        if (selectedJobOffer == null) return;
+        if (viewModel.getSelectedJobOffer() == null) return;
 
         detailsContainer.getChildren().clear();
 
-        Label titleLabel = new Label(selectedJobOffer.getTitle());
+        Label titleLabel = new Label(viewModel.getSelectedJobOffer().getTitle());
         titleLabel.getStyleClass().add("details-title");
 
-        Label companyLabel = new Label(selectedJobOffer.getCompany());
+        Label companyLabel = new Label(viewModel.getSelectedJobOffer().getCompany());
         companyLabel.getStyleClass().add("details-company");
 
-        Label locationLabel = new Label(selectedJobOffer.getLocation().getCity());
+        Label locationLabel = new Label(viewModel.getSelectedJobOffer().getLocation().getCity());
         locationLabel.getStyleClass().add("details-location");
         //locationLabel.setTextFill(Color.web("#f6f6f6"));
 
@@ -267,9 +270,15 @@ abstract class JobOffersList extends VBox {
         save.setPrefWidth(44);
         save.setPrefHeight(44);
         save.setAlignment(Pos.CENTER);
-        save.getStyleClass().add(selectedJobOffer.getIsSaved() ? "details-button-bookmark-saved" : "details-button-bookmark-unsaved");
+        save.getStyleClass().add(viewModel.getSelectedJobOffer().getIsSaved() ? "details-button-bookmark-saved" : "details-button-bookmark-unsaved");
         save.setBackground(new Background(new BackgroundFill(Color.web("#CA5656"), new CornerRadii(10), Insets.EMPTY)));
-        save.setOnAction(_ -> handleSaveButton(save, (Button)((HBox)selectedCard.getChildren().getFirst()).getChildren().getLast()));
+        save.setOnAction(_ -> {
+            try {
+                handleSaveButton(save, (Button)((HBox)selectedCard.getChildren().getFirst()).getChildren().getLast());
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
 
         HBox buttons = new HBox(25);
         buttons.getChildren().addAll(apply, save);
@@ -286,7 +295,7 @@ abstract class JobOffersList extends VBox {
         contractType.setTextFill(Color.web("#FFFFFF"));
         contractType.setStyle("-fx-background-color: transparent;");
 
-        Button typeOfContract = new Button(selectedJobOffer.getContractType());
+        Button typeOfContract = new Button(viewModel.getSelectedJobOffer().getContractType());
         typeOfContract.setFont(Font.font("Inter", FontWeight.BOLD, 12));
         typeOfContract.setTextFill(Color.web("#615E5E"));
         typeOfContract.setStyle("-fx-background-color: #C9C7C7;");
@@ -307,7 +316,7 @@ abstract class JobOffersList extends VBox {
         industryType.setTextFill(Color.web("#F1F1F1"));
         industryType.setStyle("-fx-background-color: transparent;");
 
-        Button typeOfIndustry = new Button(selectedJobOffer.getIndustry());
+        Button typeOfIndustry = new Button(viewModel.getSelectedJobOffer().getIndustry());
         typeOfIndustry.setFont(Font.font("Inter", FontWeight.BOLD, 12));
         typeOfIndustry.setTextFill(Color.web("#615E5E"));
         typeOfIndustry.setStyle("-fx-background-color: #C9C7C7;");
@@ -327,7 +336,7 @@ abstract class JobOffersList extends VBox {
         teleworkType.setTextFill(Color.web("#F1F1F1"));
         teleworkType.setStyle("-fx-background-color: transparent;");
 
-        Button typeOfTelework = new Button(selectedJobOffer.getTeleWork());
+        Button typeOfTelework = new Button(viewModel.getSelectedJobOffer().getTeleWork());
         typeOfTelework.setFont(Font.font("Inter", FontWeight.BOLD, 12));
         typeOfTelework.setTextFill(Color.web("#615E5E"));
         typeOfTelework.setStyle("-fx-background-color: #C9C7C7;");
@@ -347,7 +356,7 @@ abstract class JobOffersList extends VBox {
         salaryQtt.setTextFill(Color.web("#F1F1F1"));
         salaryQtt.setStyle("-fx-background-color: transparent;");
 
-        Button money = new Button(selectedJobOffer.getSalary());
+        Button money = new Button(viewModel.getSelectedJobOffer().getSalary());
         money.setFont(Font.font("Inter", FontWeight.BOLD, 12));
         money.setTextFill(Color.web("#615E5E"));
         money.setStyle("-fx-background-color: #C9C7C7;");
@@ -368,7 +377,7 @@ abstract class JobOffersList extends VBox {
         deadlineTime.setStyle("-fx-background-color: transparent;");
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM d, yyyy hh:mm a");
-        Button time = new Button(formatter.format(selectedJobOffer.getDeadline()));
+        Button time = new Button(formatter.format(viewModel.getSelectedJobOffer().getDeadline()));
         time.setFont(Font.font("Inter", FontWeight.BOLD, 12));
         time.setTextFill(Color.web("#615E5E"));
         time.setStyle("-fx-background-color: #C9C7C7;");
@@ -392,8 +401,8 @@ abstract class JobOffersList extends VBox {
         place.setFitHeight(31);
         place.setFitWidth(31);
         place.setPreserveRatio(true);
-        Button location = new Button(selectedJobOffer.getLocation().getCity() + ", " + selectedJobOffer.getLocation().getRegion() + ", " + selectedJobOffer.getLocation().getCountry(), place);
-        Label address = new Label("             " + ((selectedJobOffer.getLocation().getAddress() == null) ? "":selectedJobOffer.getLocation().getAddress()));
+        Button location = new Button(viewModel.getSelectedJobOffer().getLocation().getCity() + ", " + viewModel.getSelectedJobOffer().getLocation().getRegion() + ", " + viewModel.getSelectedJobOffer().getLocation().getCountry(), place);
+        Label address = new Label("             " + ((viewModel.getSelectedJobOffer().getLocation().getAddress() == null) ? "": viewModel.getSelectedJobOffer().getLocation().getAddress()));
         address.setStyle("-fx-text-fill: #000000;");
         address.setFont(Font.font("Inter", FontWeight.NORMAL, 12));
         location.setFont(Font.font("Inter", FontWeight.BOLD, 12));
@@ -407,14 +416,14 @@ abstract class JobOffersList extends VBox {
         diploma.setFitHeight(31);
         diploma.setFitWidth(31);
         diploma.setPreserveRatio(true);
-        Button diplomaB = new Button(selectedJobOffer.getEducation().getDiploma(), diploma);
-        Label field = new Label("             " +selectedJobOffer.getEducation().getField());
+        Button diplomaB = new Button(viewModel.getSelectedJobOffer().getEducation().getDiploma(), diploma);
+        Label field = new Label("             " + viewModel.getSelectedJobOffer().getEducation().getField());
         field.setStyle("-fx-text-fill: #000000;");
         field.setFont(Font.font("Inter", FontWeight.NORMAL, 12));
         diplomaB.setFont(Font.font("Inter", FontWeight.BOLD, 12));
         diplomaB.setTextFill(Color.web("#000000"));
         diplomaB.setStyle("-fx-background-color: transparent;");
-        Label level = new Label("Baccalaureate + " +selectedJobOffer.getEducation().getLevel());
+        Label level = new Label("Baccalaureate + " + viewModel.getSelectedJobOffer().getEducation().getLevel());
         level.setStyle("-fx-text-fill: #000000;");
         level.setFont(Font.font("Inter", FontWeight.NORMAL, 12));
         Region spacer = new Region();
@@ -429,11 +438,11 @@ abstract class JobOffersList extends VBox {
         experience.setFitHeight(31);
         experience.setFitWidth(31);
         experience.setPreserveRatio(true);
-        Button experienceB = new Button(selectedJobOffer.getExperience().getLevel() + " with " + selectedJobOffer.getExperience().getMinYears() + " to " + selectedJobOffer.getExperience().getMaxYears() + " of experience", experience);
+        Button experienceB = new Button(viewModel.getSelectedJobOffer().getExperience().getLevel() + " with " + viewModel.getSelectedJobOffer().getExperience().getMinYears() + " to " + viewModel.getSelectedJobOffer().getExperience().getMaxYears() + " of experience", experience);
         experienceB.setFont(Font.font("Inter", FontWeight.BOLD, 12));
         experienceB.setTextFill(Color.web("#000000"));
         experienceB.setStyle("-fx-background-color: transparent;");
-        Text descriptionExp = new Text(selectedJobOffer.getExperience().getDescription());
+        Text descriptionExp = new Text(viewModel.getSelectedJobOffer().getExperience().getDescription());
         descriptionExp.setWrappingWidth(500);
         descriptionExp.setFont(Font.font("Inter", FontWeight.NORMAL, 12));
         descriptionExp.setSelectionFill(Color.web("000000"));
@@ -443,7 +452,7 @@ abstract class JobOffersList extends VBox {
 
 
         // Job Description Titled Pane
-        Text descriptionText = new Text(selectedJobOffer.getDescription());
+        Text descriptionText = new Text(viewModel.getSelectedJobOffer().getDescription());
         descriptionText.setWrappingWidth(500);
         descriptionText.setFont(Font.font("Inter", FontWeight.NORMAL, 12));
         descriptionText.setSelectionFill(Color.web("000000"));
@@ -451,8 +460,8 @@ abstract class JobOffersList extends VBox {
 
         // Skills Titled Pane
         String content = "";
-        for (int i = 0; i< selectedJobOffer.getHardSkills().size(); i++){
-            content += "● " +selectedJobOffer.getHardSkills().get(i) + "\n";
+        for (int i = 0; i< viewModel.getSelectedJobOffer().getHardSkills().size(); i++){
+            content += "● " + viewModel.getSelectedJobOffer().getHardSkills().get(i) + "\n";
         }
         Label hardSkills = new Label("Hard Skills:\n");
         hardSkills.getStyleClass().add("skills");
@@ -464,8 +473,8 @@ abstract class JobOffersList extends VBox {
 
 
         content = "";
-        for (int i = 0; i< selectedJobOffer.getSoftSkills().size(); i++){
-            content += "● " +selectedJobOffer.getSoftSkills().get(i) + "\n";
+        for (int i = 0; i< viewModel.getSelectedJobOffer().getSoftSkills().size(); i++){
+            content += "● " + viewModel.getSelectedJobOffer().getSoftSkills().get(i) + "\n";
         }
         Label softSkills = new Label("Soft Skills:\n");
         softSkills.getStyleClass().add("skills");
@@ -487,7 +496,7 @@ abstract class JobOffersList extends VBox {
         language.setPreserveRatio(true);
         content = ""; int i = 0;
         String otherLanguages = "";
-        for (Map.Entry entry : selectedJobOffer.getLanguages().entrySet()){
+        for (Map.Entry entry : viewModel.getSelectedJobOffer().getLanguages().entrySet()){
             if(i > 2){
                 otherLanguages += "- " + entry.getKey() + ": " + entry.getValue() + "         ";
             }else{
@@ -563,35 +572,7 @@ abstract class JobOffersList extends VBox {
         noResultsLabel.setAlignment(Pos.BOTTOM_LEFT);
         detailsContainer.getChildren().add(noResultContent);
     }
-    protected void updateJobListings() {
-        if (listingVBox == null) return;
 
-       Platform.runLater(() -> {
 
-            listingVBox.getChildren().clear();
 
-            if (filteredOffers == null || filteredOffers.isEmpty()) {
-                showNoJobOffersMessage(message);
-                return;
-            }
-            int startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
-            int endIdx = Math.min(startIdx + ITEMS_PER_PAGE, filteredOffers.size());
-            if (startIdx >= filteredOffers.size()) {
-                currentPage = 1;
-                startIdx = 0;
-                endIdx = Math.min(ITEMS_PER_PAGE, filteredOffers.size());
-                updatePaginationControls();
-            }
-            for (int i = startIdx; i < endIdx; i++) {
-                JobOffer offer = filteredOffers.get(i);
-                VBox jobCard = createJobCard(offer);
-                if (offer.equals(selectedJobOffer)) {
-                    jobCard.getStyleClass().clear();
-                    jobCard.getStyleClass().add("job-card-selected");
-                    selectedCard = jobCard;
-                }
-                listingVBox.getChildren().add(jobCard);
-            }
-        });
-    }
 }

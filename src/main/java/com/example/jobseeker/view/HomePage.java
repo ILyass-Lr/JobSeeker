@@ -169,8 +169,12 @@ public class HomePage extends Page {
         button1.setPrefHeight(55);
         button1.getStyleClass().add("section-button");
         button1.onActionProperty().set(event -> {
-           getDashboard().switchPage("Companies");
-           getDashboard().resetSideBar("Companies");
+            try {
+                getDashboard().switchPage("Companies");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            getDashboard().resetSideBar("Companies");
         });
 
         companiesSection.getChildren().addAll(title2, mainText2, button1);
@@ -308,7 +312,11 @@ public class HomePage extends Page {
         button2.setPrefHeight(55);
         button2.getStyleClass().add("section-button");
         button2.onActionProperty().set(event -> {
-            getDashboard().switchPage("Job Offers");
+            try {
+                getDashboard().switchPage("Job Offers");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
             getDashboard().resetSideBar("Job Offers");
         });
 
@@ -365,7 +373,11 @@ public class HomePage extends Page {
         button3.setPrefHeight(55);
         button3.getStyleClass().add("section-button");
         button3.onActionProperty().set(event -> {
-            getDashboard().switchPage("Statistics");
+            try {
+                getDashboard().switchPage("Statistics");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
             getDashboard().resetSideBar("Statistics");
         });
 
@@ -470,7 +482,11 @@ public class HomePage extends Page {
         button3.setPrefHeight(55);
         button3.getStyleClass().add("section-button");
         button3.onActionProperty().set(event -> {
-            getDashboard().switchPage("Companies");
+            try {
+                getDashboard().switchPage("Companies");
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
             getDashboard().resetSideBar("Companies");
         });
 

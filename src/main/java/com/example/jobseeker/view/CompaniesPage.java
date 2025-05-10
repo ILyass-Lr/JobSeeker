@@ -1,7 +1,6 @@
 package com.example.jobseeker.view;
 
 import com.example.jobseeker.Dashboard;
-import com.example.jobseeker.JobOffersPage;
 import com.example.jobseeker.model.Company;
 import com.example.jobseeker.viewmodel.CompanyViewModel;
 import javafx.application.Platform;
@@ -21,7 +20,7 @@ import java.util.Objects;
 
 public class CompaniesPage extends VBox {
     private final int ITEMS_PER_PAGE = 15;
-    private int currentPage = 1;
+    private final int currentPage = 1;
     private HBox pagination;
     //private List<Company> companies;
 
@@ -293,8 +292,16 @@ public class CompaniesPage extends VBox {
             checkJobsButton.setPrefHeight(44);
             checkJobsButton.getStyleClass().add("details-button");
             checkJobsButton.onActionProperty().set(event -> {
-                ((JobOffersPage)(dashboard.pages.get("Job Offers"))).applyExternalFilter(company.getName());
-                dashboard.switchPage("Job Offers");
+                try {
+                    ((JobOffersPage)(dashboard.pages.get("Job Offers"))).applyExternalFilter(company.getName());
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+                try {
+                    dashboard.switchPage("Job Offers");
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
                 dashboard.resetSideBar("Job Offers");
             });
 
@@ -469,8 +476,16 @@ public class CompaniesPage extends VBox {
             checkJobsButton.setPrefHeight(44);
             checkJobsButton.getStyleClass().add("details-button");
             checkJobsButton.onActionProperty().set(event -> {
-                ((JobOffersPage)(Dashboard.pages.get("Job Offers"))).applyExternalFilter(viewModel.getSelectedCompany().getName());
-                dashboard.switchPage("Job Offers");
+                try {
+                    ((JobOffersPage)(Dashboard.pages.get("Job Offers"))).applyExternalFilter(viewModel.getSelectedCompany().getName());
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+                try {
+                    dashboard.switchPage("Job Offers");
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
                 dashboard.resetSideBar("Job Offers");
             });
             VBox.setMargin(checkJobsButton, new Insets(25, 5, 25, 5));
@@ -499,6 +514,8 @@ public class CompaniesPage extends VBox {
                 if (firstCompany.equals(viewModel.getSelectedCompany())) {
                     selectedCompanyVBox = firstCard;
                     firstCard.getStyleClass().add("company-stroke");
+                }else{
+                    firstCard.getStyleClass().remove("company-stroke");
                 }
 
                 GridPane.setColumnSpan(firstCard, 2);

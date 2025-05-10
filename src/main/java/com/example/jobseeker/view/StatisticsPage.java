@@ -4,6 +4,7 @@ import com.example.jobseeker.Dashboard;
 import com.example.jobseeker.Page;
 import com.example.jobseeker.model.JobOffer;
 import com.example.jobseeker.util.DatabaseUtil;
+import com.example.jobseeker.viewmodel.JobOfferViewModel;
 import javafx.application.Platform;
 import javafx.scene.chart.*;
 import javafx.geometry.Insets;
@@ -21,18 +22,25 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
-public class StatisticsPage extends Page {
+public class StatisticsPage extends VBox {
     private BarChart<String, Number> barChart;
     private PieChart industryPieChart;
     private BarChart<String, Number> locationChart;
     private VBox chartContainer;
+    protected  JobOfferViewModel viewModel;
 
-    public StatisticsPage(Dashboard dashboard) throws SQLException {
-        super(dashboard);
+    protected Dashboard dashboard;
+
+    public StatisticsPage(Dashboard dashboard, JobOfferViewModel viewModel) throws SQLException {
+        this.dashboard = dashboard;
+
+        this.viewModel = viewModel;
+        initialize();
     }
 
-    @Override
+    //@Override
     protected void initialize() throws SQLException {
+
         initializeChartContainer();
         setPadding(new Insets(40));
         getChildren().add(chartContainer);
@@ -191,7 +199,7 @@ private VBox createChartContainer(Chart chart, double width, double height) {
         }
 
         // Count job offers
-        for (JobOffer offer : DatabaseUtil.getAllJobOffers()) {
+        for (JobOffer offer : viewModel.getJobOffers()) {
             YearMonth offerYearMonth = YearMonth.from(offer.getPublishDate());
             long monthsBetween = currentYearMonth.until(offerYearMonth, ChronoUnit.MONTHS);
             if (monthsBetween >= -11 && monthsBetween <= 0) {
@@ -225,7 +233,7 @@ private VBox createChartContainer(Chart chart, double width, double height) {
         );
 
         Map<String, Integer> industryCount = new HashMap<>();
-        for (JobOffer offer : DatabaseUtil.getAllJobOffers()) {
+        for (JobOffer offer : viewModel.getJobOffers()) {
             String industry = offer.getIndustry();
             industryCount.put(industry, industryCount.getOrDefault(industry, 0) + 1);
         }
@@ -316,7 +324,7 @@ private VBox createChartContainer(Chart chart, double width, double height) {
         );
 
         Map<String, Integer> locationCount = new HashMap<>();
-        for (JobOffer offer : DatabaseUtil.getAllJobOffers()) {
+        for (JobOffer offer : viewModel.getJobOffers()) {
             String city = offer.getLocation().getCity();
             locationCount.put(city, locationCount.getOrDefault(city, 0) + 1);
         }

@@ -1,12 +1,17 @@
 package com.example.jobseeker;
 
 import com.example.jobseeker.dao.CompanyDAO;
+import com.example.jobseeker.dao.JobOfferDAO;
 import com.example.jobseeker.model.JobOffer;
 import com.example.jobseeker.util.DatabaseUtil;
 import com.example.jobseeker.view.CompaniesPage;
 import com.example.jobseeker.view.HomePage;
 import com.example.jobseeker.view.StatisticsPage;
+import com.example.jobseeker.view.BookmarkedJobOffersPage;
 import com.example.jobseeker.viewmodel.CompanyViewModel;
+import com.example.jobseeker.viewmodel.JobOfferViewModel;
+import com.example.jobseeker.view.JobOffersPage;
+import com.example.jobseeker.viewmodel.LogInViewModel;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -42,14 +47,23 @@ public class Dashboard extends Application {
     public void start(Stage stage) throws SQLException {
         Connection connection = DatabaseUtil.getConnection();
         CompanyDAO companyDAO = new CompanyDAO(connection);
+        JobOfferDAO jobOfferDAO = new JobOfferDAO(connection);
         CompanyViewModel companyViewModel = new CompanyViewModel(companyDAO);
+        JobOfferViewModel jobOfferViewModel = new JobOfferViewModel(jobOfferDAO);
+        masterJobOffersList = jobOfferViewModel.getJobOffers();
 
         pages = new HashMap<>();
         pages.put("Home", new HomePage(this));
         pages.put("Companies", new CompaniesPage(this, companyViewModel));
-        pages.put("Job Offers", new JobOffersPage(this));
-        pages.put("Statistics", new StatisticsPage(this));
-        pages.put("Saved Job Offers", new BookmarkedJobOffersPage(this));
+        pages.put("Job Offers", new JobOffersPage(this, jobOfferViewModel));
+        pages.put("Statistics", new StatisticsPage(this, jobOfferViewModel));
+        pages.put("Saved Job Offers", new BookmarkedJobOffersPage(this, jobOfferViewModel));
+
+//        ages.get("Statistics") ->{
+//            logedin = LogInViewModel.loggedIn
+//            PAGE
+//        } p
+       // pages.keySet(new StatisticsPage(this, jobOfferViewModel))
 
         try {
             Image image = new Image(Objects.requireNonNull(Dashboard.class.getResource("/com/example/jobseeker/logo.png")).toExternalForm());
@@ -93,11 +107,14 @@ public class Dashboard extends Application {
         stage.show();
     }
 
-    public void switchPage(String pageName) {
+    public void switchPage(String pageName) throws SQLException {
         VBox page = pages.get(pageName);
 
         if (page != null) {
             if(pageName.equals("Saved Job Offers") || pageName.equals("Job Offers")) {
+                if (pageName.equals("Saved Job Offers") ){
+                    ((BookmarkedJobOffersPage)page).refreshBookmarkedJobs();
+                }
                 contentPane.setContent(page);
             } else {
                 contentPane.setContent(page);
@@ -154,7 +171,13 @@ public class Dashboard extends Application {
             }
 
             // Click handler for the button
-            clickableIcon.setOnAction(event -> handleButtonClick(clickableIcon, sideBar));
+            clickableIcon.setOnAction(event -> {
+                try {
+                    handleButtonClick(clickableIcon, sideBar);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
 
             clickableIcon.setOnMouseEntered(_ ->{
                 if(!clickedButtons.get(clickableIcon)){
@@ -188,7 +211,7 @@ public class Dashboard extends Application {
         return sideBar;
     }
 
-    private void handleButtonClick(Button clickableIcon, VBox sideBar) {
+    private void handleButtonClick(Button clickableIcon, VBox sideBar) throws SQLException {
         clickedButtons.forEach((button, wasClicked) -> clickedButtons.put(button, button.equals(clickableIcon)));
 
         for (Node node : sideBar.getChildren()) {
@@ -343,31 +366,38 @@ public class Dashboard extends Application {
         }
 
     }
-    public void toggleBookmark(JobOffer jobOffer, int index) {
-        // Find and update the job offer in the master list
-        for (JobOffer offer : masterJobOffersList) {
-            if (offer.equals(jobOffer)) {
-                offer.setIsSaved(offer.getIsSaved()); // Toggle the bookmark
-                break;
+
+    public void toggleBookmark(JobOffer jobOffer, int source) throws SQLException {
+        try {
+            // Persist the change to database using the ViewModel
+
+
+            // Update the JobOffersPage if we're coming from there
+            if (source == 1) {
+                ((JobOffersPage) pages.get("Job Offers")).refreshJobOffers(jobOffer);
             }
-        }
-        if(index == 1){
-            ((JobOffersPage) pages.get("Job Offers")).refreshJobOffers(jobOffer);
-        }else{
-            ((BookmarkedJobOffersPage)pages.get("Saved Job Offers")).refreshBookmarkedJobs(masterJobOffersList);
+
+            // Update the BookmarkedJobOffersPage regardless of source
+            // This ensures that the bookmarked page is always up to date
+            if (pages.containsKey("Saved Job Offers")) {
+                ((BookmarkedJobOffersPage) pages.get("Saved Job Offers")).refreshBookmarkedJobs();
+            }
+        } catch (SQLException e) {
+            // Handle any database errors
+            System.err.println("Error toggling bookmark: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
     }
 
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args){
         //masterJobOffersList = new ArrayList<>( JobOffer.getDummyData());
-        try{
-            masterJobOffersList = DatabaseUtil.getAllJobOffers();
+       // try{
+            //masterJobOffersList = DatabaseUtil.getAllJobOffers();
             launch();
-        }catch(SQLException e){
-            System.out.println("Problem de SQL !");
-            e.printStackTrace();
-        }
-
-
+      //  }catch(SQLException e){
+      //      System.out.println("Problem de SQL !");
+      //      e.printStackTrace();
+      //  }
     }
 }
