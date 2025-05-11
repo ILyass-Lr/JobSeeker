@@ -44,8 +44,9 @@ public class JobOfferViewModel {
     }
 
     // Load only saved job offers
-    public void loadSavedJobOffers() throws SQLException {
-        List<JobOffer> savedList = jobOfferDAO.getSavedJobOffers();
+    public void loadSavedJobOffers(int userId) throws SQLException {
+
+        List<JobOffer> savedList = jobOfferDAO.getSavedJobOffers(userId);
         savedJobOffers.clear();
         savedJobOffers.addAll(savedList);
 
@@ -61,12 +62,10 @@ public class JobOfferViewModel {
     }
 
     // Toggle the saved state of a job offer and persist to database
-    public void toggleJobOfferSavedState(JobOffer jobOffer) throws SQLException {
-        boolean newSavedState = !jobOffer.getIsSaved();
-        jobOffer.setIsSaved(newSavedState);
+    public void toggleJobOfferSavedState(int userId, JobOffer jobOffer) throws SQLException {
+        boolean newSavedState = !jobOfferDAO.isJobOfferSaved(userId, jobOffer.getId());
+        jobOfferDAO.updateJobOfferSavedState(jobOffer.getId(), userId);
 
-        // Persist the change to database
-        jobOfferDAO.updateJobOfferSavedState(jobOffer);
 
         // Update our collections to reflect the change
         if (newSavedState) {
@@ -80,7 +79,20 @@ public class JobOfferViewModel {
 
     // Search companies by name, industry, or location
     public void searchJobOffers(String searchText, String dateFilter, String contractFilter, String locationFilter, String teleworkFilter) throws SQLException {
-        List<JobOffer> filteredJobOffers = jobOfferDAO.searchJobOffers(searchText, dateFilter, contractFilter, locationFilter, teleworkFilter);
+        String contractSearch, locationSearch, teleworkSearch;
+        int daysNumber = switch (dateFilter) {
+            case "Past 24 hours" -> 1;
+            case "Past week" -> 7;
+            case "Past month" -> 30;
+            default -> 5*356;
+        };
+
+        contractSearch = (!contractFilter.equalsIgnoreCase("Any Contract Type")) ? contractFilter : "%";
+        locationSearch = (!contractFilter.equalsIgnoreCase("Any Location")) ? locationFilter : "%";
+        teleworkSearch = (!teleworkFilter.equalsIgnoreCase("Any TeleWork Type")) ? teleworkFilter : "%";
+
+
+        List<JobOffer> filteredJobOffers = jobOfferDAO.searchJobOffers(searchText, daysNumber, contractSearch, locationSearch, teleworkSearch);
         jobOffers.clear();
         jobOffers.addAll(filteredJobOffers);
 
@@ -91,6 +103,8 @@ public class JobOfferViewModel {
 
     public void searchJobOffersByName(String searchText) throws SQLException {
         List<JobOffer> filteredJobOffers = jobOfferDAO.searchJobOffersByCompany(searchText);
+
+
         jobOffers.clear();
         jobOffers.addAll(filteredJobOffers);
 
@@ -148,6 +162,9 @@ public class JobOfferViewModel {
     // Getters for observable collections and properties
     public ObservableList<JobOffer> getJobOffers() {
         return jobOffers;
+    }
+    public boolean isSaved(int userId, JobOffer jobOffer) throws SQLException {
+        return jobOfferDAO.isJobOfferSaved(userId, jobOffer.getId());
     }
 
     public ObjectProperty<JobOffer> selectedJobOfferProperty() {

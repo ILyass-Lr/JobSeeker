@@ -25,12 +25,11 @@ public class JobOffer {
     private final LocalDateTime deadline;
     private final String salary;
     private final String requirements;
-    private boolean isSaved;
     private final String industry;
     private final String teleWork;
 
     public JobOffer(int id,String title, String company, Location location, Education education, Experience experience, String contractType, List<String> hardSkills, List<String> softSkills, Map<String, String> languages,
-                    String description, LocalDateTime publishDate, String salary, String requirements, String industry, boolean isSaved, String teleWork, LocalDateTime deadline) {
+                    String description, LocalDateTime publishDate, String salary, String requirements, String industry, String teleWork, LocalDateTime deadline) {
         this.id = id;
         this.title = defaultIfNull(title, "Unspecified");
         this.company = defaultIfNull(company, "Unspecified");
@@ -45,7 +44,6 @@ public class JobOffer {
         this.publishDate = publishDate;
         this.salary = defaultIfNull(salary, "Unspecified");
         this.requirements = defaultIfNull(requirements, "Unspecified");
-        this.isSaved = isSaved;
         this.industry = defaultIfNull(industry, "Unspecified");
         this.teleWork = defaultIfNull(teleWork, "Unspecified");
         this.deadline = deadline;
@@ -140,13 +138,7 @@ public class JobOffer {
     public String getSalary() {
         return salary;
     }
-    public boolean getIsSaved() {
-        return isSaved;
-    }
 
-    public void setIsSaved(boolean saved) {
-        isSaved = saved;
-    }
     public String getIndustry() {
         return industry;
     }
@@ -201,7 +193,7 @@ public class JobOffer {
                 "Competitive",
                 "- 5+ years experience in Java\n- Spring Boot\n- React/Angular",
                 "IT",
-                true,
+
                 "Yes",
                 LocalDateTime.now().plusDays(10)
         ));
@@ -269,7 +261,7 @@ public class JobOffer {
                         "● Maîtrise des aspects administratifs liés à la gestion des RH.\n" +
                         "● Compétences en bureautique (Word, Excel, etc.).",
                 "Hospitality",
-                false,
+
                 "No",
                 LocalDateTime.now().plusDays(5)
         ));
@@ -314,7 +306,7 @@ public class JobOffer {
                     "$" + (80000 + i * 5000) + " - $" + (100000 + i * 5000),
                     "Requirements for position " + i,
                     i % 2 == 0 ? "Health & Care" : "Teaching",
-                    i % 2 == 0,
+
                     i % 2 == 0 ? "No" : "Hybrid",
                     LocalDateTime.now().plusDays(i * 2)
             ));

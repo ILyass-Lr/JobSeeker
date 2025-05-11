@@ -20,7 +20,7 @@ import java.util.Objects;
 
 public class CompaniesPage extends VBox {
     private final int ITEMS_PER_PAGE = 15;
-    private final int currentPage = 1;
+    //private final int currentPage = 1;
     private HBox pagination;
     //private List<Company> companies;
 
@@ -293,15 +293,13 @@ public class CompaniesPage extends VBox {
             checkJobsButton.getStyleClass().add("details-button");
             checkJobsButton.onActionProperty().set(event -> {
                 try {
-                    ((JobOffersPage)(dashboard.pages.get("Job Offers"))).applyExternalFilter(company.getName());
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-                try {
+                    ((JobOffersPage)Dashboard.pages.get("Job Offers")).getViewModel().searchJobOffersByName(company.getName());
                     dashboard.switchPage("Job Offers");
+
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
+
                 dashboard.resetSideBar("Job Offers");
             });
 
@@ -353,9 +351,9 @@ public class CompaniesPage extends VBox {
 
             // Update selection and add stroke
             viewModel.selectCompany(company);
-
+            selectedCompanyCard.getStyleClass().add("company-stroke");
             selectedCompanyVBox = selectedCompanyCard;
-            selectedCompanyVBox.getStyleClass().add("company-stroke");
+
 
             // Update details section
             updateDetailsSection();
@@ -477,7 +475,8 @@ public class CompaniesPage extends VBox {
             checkJobsButton.getStyleClass().add("details-button");
             checkJobsButton.onActionProperty().set(event -> {
                 try {
-                    ((JobOffersPage)(Dashboard.pages.get("Job Offers"))).applyExternalFilter(viewModel.getSelectedCompany().getName());
+                    Dashboard.jobOffersPage.getViewModel().searchJobOffersByName(viewModel.getSelectedCompany().getName());
+                    dashboard.switchPage("Job Offers");
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
@@ -524,9 +523,10 @@ public class CompaniesPage extends VBox {
             }
 
             // Add remaining items in a 2-column grid
-            int row = (currentPage == 1) ? 1 : 0;
+            int row = (viewModel.getCurrentPage() == 1) ? 1 : 0;
             int col = 0;
-            for (Company company : viewModel.getCurrentPageCompanies() ) {
+            for (Company company : (viewModel.getCurrentPage() == 1) ? viewModel.getCurrentPageCompanies().subList(1, viewModel.getCurrentPageCompanies().size()) : viewModel.getCurrentPageCompanies() ) {
+
                 VBox card = createCompanyCard(company, false);
 
                 // If this is the selected company, add the stroke effect

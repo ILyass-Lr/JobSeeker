@@ -1,14 +1,12 @@
 package com.example.jobseeker.view;
 
+import com.example.jobseeker.Dashboard;
 import com.example.jobseeker.model.JobOffer;
 import com.example.jobseeker.viewmodel.JobOfferViewModel;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TitledPane;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
@@ -34,9 +32,10 @@ abstract class JobOffersList extends VBox {
     protected String message;
     protected VBox listingVBox;
     protected HBox pagination;
-
+    protected Dashboard dashboard;
     protected JobOfferViewModel viewModel;
-    protected JobOffersList(String message, JobOfferViewModel jobOfferViewModel) throws SQLException {
+    protected JobOffersList(String message, JobOfferViewModel jobOfferViewModel, Dashboard dashboard) throws SQLException {
+        this.dashboard = dashboard;
         this.viewModel = jobOfferViewModel;
         pagination = new HBox(10);
         setAlignment(Pos.TOP_CENTER);
@@ -57,10 +56,19 @@ abstract class JobOffersList extends VBox {
         initialize();
         Platform.runLater(() -> {
             if (!viewModel.getJobOffers().isEmpty()) {
-                System.out.println("Test: " + viewModel.getJobOffers().get(0).getTitle());
+
                 JobOffer firstOffer = jobOfferViewModel.getJobOffers().getFirst();
-                VBox firstCard = createJobCard(firstOffer);
-                selectJobOffer(firstOffer, firstCard);
+                VBox firstCard = null;
+                try {
+                    firstCard = createJobCard(firstOffer);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+                try {
+                    selectJobOffer(firstOffer, firstCard);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
                 updateJobListings();
             } else {
                 showNoJobOffersMessage(message);
@@ -68,7 +76,7 @@ abstract class JobOffersList extends VBox {
         });
     }
     protected abstract void initializeData() throws SQLException;
-    protected abstract void initialize();
+    protected abstract void initialize() throws SQLException;
     protected abstract void handleSaveButton(Button save, Button bookmark) throws SQLException;
     protected abstract void updateJobListings();
     private ScrollPane createJobListingsSection() {
@@ -136,7 +144,7 @@ abstract class JobOffersList extends VBox {
     }
 
 
-    protected VBox createJobCard(JobOffer offer) {
+    protected VBox createJobCard(JobOffer offer) throws SQLException {
         if (offer == null) return null;
         int maxCharacters = 200;
 
@@ -159,7 +167,12 @@ abstract class JobOffersList extends VBox {
         save.setPrefSize(60, 60);
         save.setMinSize(60, 60);
         save.setMaxSize(60, 60);
-        save.getStyleClass().add(offer.getIsSaved() ? "job-card-bookmark-saved" : "job-card-bookmark-unsaved");
+        if (dashboard.getCurrentUser() != null) {
+            save.getStyleClass().add(viewModel.isSaved(dashboard.getCurrentUser().getId(), offer) ? "job-card-bookmark-saved" : "job-card-bookmark-unsaved");
+        }else{
+            save.getStyleClass().add("job-card-bookmark-unsaved");
+        }
+
         save.setAlignment(Pos.CENTER);
 
         HBox cardHeader = new HBox();
@@ -205,12 +218,16 @@ abstract class JobOffersList extends VBox {
         card.setAlignment(Pos.TOP_LEFT);
         card.getStyleClass().add("job-card");
         card.setOnMouseClicked(_ -> {
-            selectJobOffer(offer, card);
+            try {
+                selectJobOffer(offer, card);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
 
         });
         return card;
     }
-    protected void selectJobOffer(JobOffer offer, VBox card) {
+    protected void selectJobOffer(JobOffer offer, VBox card) throws SQLException {
         if (offer == null) return;
         if (selectedCard != null) {
             Platform.runLater(()->{
@@ -228,7 +245,7 @@ abstract class JobOffersList extends VBox {
         viewModel.selectJobOffer(offer);
         updateJobDetails();
     }
-    protected void updateJobDetails() {
+    protected void updateJobDetails() throws SQLException {
 
         if (viewModel.getSelectedJobOffer() == null) return;
 
@@ -270,7 +287,14 @@ abstract class JobOffersList extends VBox {
         save.setPrefWidth(44);
         save.setPrefHeight(44);
         save.setAlignment(Pos.CENTER);
-        save.getStyleClass().add(viewModel.getSelectedJobOffer().getIsSaved() ? "details-button-bookmark-saved" : "details-button-bookmark-unsaved");
+        if (dashboard.getCurrentUser() != null) {
+            save.getStyleClass().add(viewModel.isSaved(dashboard.getCurrentUser().getId(), viewModel.getSelectedJobOffer()) ? "details-button-bookmark-saved" : "details-button-bookmark-unsaved");
+        }else{
+            save.getStyleClass().add("details-button-bookmark-unsaved");
+            save.setDisable(true);
+            save.setTooltip(new Tooltip("You need to create an account"));
+        }
+
         save.setBackground(new Background(new BackgroundFill(Color.web("#CA5656"), new CornerRadii(10), Insets.EMPTY)));
         save.setOnAction(_ -> {
             try {

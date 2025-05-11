@@ -25,21 +25,17 @@ public class JobOffersPage extends JobOffersList {
     private ComboBox<String> locationFilter;
     private ComboBox<String> teleworkFilter;
     private TextField searchField;
-    private ObservableList<JobOffer> jobOffers;
+    //private ObservableList<JobOffer> jobOffers;
 
-    private final Dashboard dashboard;
+
     public JobOffersPage(Dashboard dashboard, JobOfferViewModel jobOfferViewModel) throws SQLException {
-        super("No job offers found matching your criteria.", jobOfferViewModel);
-        this.dashboard = dashboard;
-
-        dashboard.switchPage("Form");
-        dashboard.switchPage("JobOffer");
+        super("No job offers found matching your criteria.", jobOfferViewModel, dashboard);
     }
     @Override
     protected void initializeData() throws SQLException {
         // Load all job offers for this page
         viewModel.loadJobOffers();
-        jobOffers = viewModel.getJobOffers();
+       // jobOffers = viewModel.getJobOffers();
     }
     @Override
     protected void initialize() {
@@ -183,8 +179,11 @@ public class JobOffersPage extends JobOffersList {
         JobOffer jobOffer = viewModel.getSelectedJobOffer();
         if (jobOffer == null) return;
 
+        viewModel.toggleJobOfferSavedState(dashboard.getCurrentUser().getId() ,jobOffer);
+        //viewModel.loadSavedJobOffers();
+
         // Toggle the saved state
-        boolean newSavedState = !jobOffer.getIsSaved();
+        boolean newSavedState = viewModel.isSaved(dashboard.getCurrentUser().getId() ,jobOffer);
 
         // Update the UI
         save.getStyleClass().clear();
@@ -196,8 +195,7 @@ public class JobOffersPage extends JobOffersList {
         }
 
         // Use dashboard to persist the change and update both pages
-        viewModel.toggleJobOfferSavedState(jobOffer);
-        viewModel.loadSavedJobOffers();
+
         dashboard.toggleBookmark(jobOffer, 1);
     }
 
@@ -224,7 +222,12 @@ public class JobOffersPage extends JobOffersList {
             }
             for (int i = startIdx; i < endIdx; i++) {
                 JobOffer offer = viewModel.getJobOffers().get(i);
-                VBox jobCard = createJobCard(offer);
+                VBox jobCard = null;
+                try {
+                    jobCard = createJobCard(offer);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
                 if (offer.equals(viewModel.getSelectedJobOffer())) {
                     jobCard.getStyleClass().clear();
                     jobCard.getStyleClass().add("job-card-selected");
@@ -235,22 +238,17 @@ public class JobOffersPage extends JobOffersList {
         });
     }
 
-public void refreshJobOffers(JobOffer updatedOffer) throws SQLException {
-    // Refresh the display for a specific job offer that was updated
-    viewModel.loadJobOffers();
-    if (updatedOffer != null && selectedCard != null) {
-        // Update UI elements for the specific job card if it's currently selected
-        if (updatedOffer.equals(viewModel.getSelectedJobOffer())) {
-            updateJobDetails();
-        }
-    }
-}
+//public void refreshJobOffers() throws SQLException {
+//    // Refresh the display for a specific job offer that was updated
+//
+//    if (updatedOffer != null && selectedCard != null) {
+//        // Update UI elements for the specific job card if it's currently selected
+//        if (updatedOffer.equals(viewModel.getSelectedJobOffer())) {
+//            updateJobDetails();
+//        }
+//    }
+//}
 
-    public void applyExternalFilter(String companyName) throws SQLException {
-        companyName = companyName.toLowerCase();
-        viewModel.searchJobOffersByName(companyName);
-        updateUIAfterFiltering();
-    }
 
 
 
@@ -266,13 +264,13 @@ public void refreshJobOffers(JobOffer updatedOffer) throws SQLException {
         viewModel.searchJobOffers(searchText,selectedDateFilter, selectedContractFilter, selectedLocationFilter,selectedTeleworkFilter);
 
         // Reset to first page and update UI
-        currentPage = 1;
+
         updateUIAfterFiltering();
     }
 
-    private void updateUIAfterFiltering() {
+    public void updateUIAfterFiltering() {
         Platform.runLater(() -> {
-            if (jobOffers.isEmpty()) {
+            if (viewModel.getJobOffers().isEmpty()) {
                 showNoJobOffersMessage(message);
             } else {
                 // Update pagination visibility
@@ -281,19 +279,31 @@ public void refreshJobOffers(JobOffer updatedOffer) throws SQLException {
                 }
 
                 // Handle selection
-                if (viewModel.getSelectedJobOffer() != null && jobOffers.contains(viewModel.getSelectedJobOffer())) {
+                if (viewModel.getSelectedJobOffer() != null && viewModel.getJobOffers().contains(viewModel.getSelectedJobOffer())) {
                     updateJobListings();
-                    updateJobDetails();
+                    try {
+                        updateJobDetails();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
                 } else {
                     viewModel.selectJobOffer(viewModel.getFirstJobOffer());
                     //selectedCard = createJobCard(selectedJobOffer);
                     updateJobListings();
-                    updateJobDetails();
+                    try {
+                        updateJobDetails();
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
                     //selectJobOffer(selectedJobOffer, selectedCard);
                 }
 
                 updatePaginationControls();
             }
         });
+    }
+
+    public JobOfferViewModel getViewModel() {
+        return viewModel;
     }
 }

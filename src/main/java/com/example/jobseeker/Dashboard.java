@@ -2,16 +2,15 @@ package com.example.jobseeker;
 
 import com.example.jobseeker.dao.CompanyDAO;
 import com.example.jobseeker.dao.JobOfferDAO;
+import com.example.jobseeker.dao.UserDAO;
 import com.example.jobseeker.model.JobOffer;
+import com.example.jobseeker.model.User;
 import com.example.jobseeker.util.DatabaseUtil;
-import com.example.jobseeker.view.CompaniesPage;
-import com.example.jobseeker.view.HomePage;
-import com.example.jobseeker.view.StatisticsPage;
-import com.example.jobseeker.view.BookmarkedJobOffersPage;
+import com.example.jobseeker.view.*;
 import com.example.jobseeker.viewmodel.CompanyViewModel;
 import com.example.jobseeker.viewmodel.JobOfferViewModel;
-import com.example.jobseeker.view.JobOffersPage;
-import com.example.jobseeker.viewmodel.LogInViewModel;
+import com.example.jobseeker.viewmodel.SignInViewModel;
+import com.example.jobseeker.viewmodel.SignUpViewModel;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -43,27 +42,49 @@ public class Dashboard extends Application {
     private static final double SIDEBAR_EXPANDED_WIDTH = 255;
     private boolean isSidebarExpanded = false;
 
+    // User tracking
+    private User currentUser = null;
+    public enum UserRole { NONE, CANDIDATE, RECRUITER }
+    private UserRole currentRole = UserRole.NONE;
+
+    // Page references by role
+    private final Map<UserRole, List<String>> rolePages = new HashMap<>();
+
+    // Sidebar elements
+    private Map<Button, Boolean> clickedButtons;
+    private Map<Button, String> buttonNamePair;
+
+    // Switch Pages
+    static public SignInView signInView;
+    static public SignUpView signUpView;
+    static public JobOffersPage jobOffersPage;
+
     @Override
     public void start(Stage stage) throws SQLException {
         Connection connection = DatabaseUtil.getConnection();
+
         CompanyDAO companyDAO = new CompanyDAO(connection);
         JobOfferDAO jobOfferDAO = new JobOfferDAO(connection);
+        UserDAO userDAO = new UserDAO(connection);
+
         CompanyViewModel companyViewModel = new CompanyViewModel(companyDAO);
         JobOfferViewModel jobOfferViewModel = new JobOfferViewModel(jobOfferDAO);
+        SignUpViewModel signUpViewModel = new SignUpViewModel(userDAO);
+        SignInViewModel signInViewModel = new SignInViewModel(userDAO);
+
+        jobOfferViewModel.loadJobOffers();
         masterJobOffersList = jobOfferViewModel.getJobOffers();
 
-        pages = new HashMap<>();
-        pages.put("Home", new HomePage(this));
-        pages.put("Companies", new CompaniesPage(this, companyViewModel));
-        pages.put("Job Offers", new JobOffersPage(this, jobOfferViewModel));
-        pages.put("Statistics", new StatisticsPage(this, jobOfferViewModel));
-        pages.put("Saved Job Offers", new BookmarkedJobOffersPage(this, jobOfferViewModel));
+        // Switched Pages
+        signInView = new SignInView(signInViewModel, this);
+        signUpView = new SignUpView(signUpViewModel, this);
+        jobOffersPage = new JobOffersPage(this, jobOfferViewModel);
 
-//        ages.get("Statistics") ->{
-//            logedin = LogInViewModel.loggedIn
-//            PAGE
-//        } p
-       // pages.keySet(new StatisticsPage(this, jobOfferViewModel))
+        // Initialize all possible pages
+        initializeAllPages(jobOfferViewModel, companyViewModel, signInViewModel);
+
+        // Set up role-based page access
+        initializeRolePages();
 
         try {
             Image image = new Image(Objects.requireNonNull(Dashboard.class.getResource("/com/example/jobseeker/logo.png")).toExternalForm());
@@ -79,10 +100,120 @@ public class Dashboard extends Application {
         // Initialize content
         contentPane = new ScrollPane(pages.get("Home"));
         contentPane.setFitToWidth(true);
-        //contentPane.setFitToHeight(true);
         contentPane.setPrefWidth(1440);
 
-        // Initialize sidebar
+        root.getChildren().add(contentPane);
+
+        // Initialize sidebar for default role (not logged in)
+        refreshSidebar();
+
+        Scene scene = new Scene(root, 1800, 990);
+        stage.setResizable(true);
+        scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/styles.css")).toExternalForm());
+        stage.setTitle("Job Seeker");
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    private void initializeAllPages(JobOfferViewModel jobOfferViewModel, CompanyViewModel companyViewModel, SignInViewModel signInViewModel) throws SQLException {
+        pages = new HashMap<String, VBox>();
+
+        // Common pages for all users
+        pages.put("Home", new HomePage(this));
+        pages.put("Log in - Log out", signInView);
+
+        // Candidate specific pages
+        pages.put("Companies", new CompaniesPage(this, companyViewModel));
+        pages.put("Job Offers", jobOffersPage);
+        pages.put("Statistics", new StatisticsPage(this, jobOfferViewModel));
+        pages.put("Saved Job Offers", new BookmarkedJobOffersPage(this, jobOfferViewModel));
+
+        // Recruiter specific pages
+        pages.put("Create Job Offer", new CreateJobOfferView(this));
+        pages.put("My Job Listings", new MyJobListingsView(this));
+    }
+
+    private void initializeRolePages() {
+        // Pages visible when no user is logged in
+        rolePages.put(UserRole.NONE, Arrays.asList(
+                "Home",
+                "Companies",
+                "Job Offers",
+                "Log in - Log out"
+        ));
+
+        // Pages visible to logged in candidates
+        rolePages.put(UserRole.CANDIDATE, Arrays.asList(
+                "Home",
+                "Companies",
+                "Job Offers",
+                "Statistics",
+                "Saved Job Offers"
+        ));
+
+        // Pages visible to logged in recruiters
+        rolePages.put(UserRole.RECRUITER, Arrays.asList(
+                "Home",
+                "Create Job Offer",
+                "My Job Listings"
+        ));
+    }
+
+    public void switchPage(String pageName) throws SQLException {
+        // Special handling based on user role and requested page
+
+
+        VBox page = pages.get(pageName);
+
+        if (page != null) {
+            if(pageName.equals("Saved Job Offers") || pageName.equals("Job Offers") || pageName.equals("My Job Listings")) {
+                if (pageName.equals("Saved Job Offers")) {
+                    ((BookmarkedJobOffersPage)page).refreshBookmarkedJobs();
+                }else if (pageName.equals("Job Offers")) {
+                    jobOffersPage.updateUIAfterFiltering();
+                }
+                contentPane.setContent(page);
+            } else {
+                contentPane.setContent(page);
+                contentPane.setPrefHeight(1024);
+                contentPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+                contentPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+            }
+        } else {
+            System.out.println("Page not found: " + pageName);
+        }
+    }
+
+    // Method to update the user and refresh UI accordingly
+    public void setCurrentUser(User user) {
+        this.currentUser = user;
+
+        if (user == null) {
+            currentRole = UserRole.NONE;
+        } else {
+            // Set role based on user type
+            currentRole = user.getRole().equalsIgnoreCase("RECRUITER") ? UserRole.RECRUITER : UserRole.CANDIDATE;
+        }
+
+        // Refresh the sidebar with appropriate options
+        refreshSidebar();
+
+        try {
+            // Switch to home page after login/logout
+            switchPage("Home");
+        } catch (SQLException e) {
+            System.err.println("Error switching to home page: " + e.getMessage());
+        }
+    }
+
+    // Method to refresh sidebar based on current user role
+    private void refreshSidebar() {
+        // Remove current sidebar if it exists
+        if (sideBar != null) {
+            root.getChildren().remove(sideBar);
+        }
+
+        // Create new sidebar with appropriate options
         sideBar = initializeSideBar();
         sideBar.setPrefWidth(SIDEBAR_COLLAPSED_WIDTH);
         sideBar.setMinWidth(SIDEBAR_COLLAPSED_WIDTH);
@@ -96,65 +227,36 @@ public class Dashboard extends Application {
         )));
         sideBar.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 10, 0, 0, 0);");
 
-        // Add both to root StackPane
-        root.getChildren().addAll(contentPane, sideBar);
-
-        Scene scene = new Scene(root, 1800, 990);
-        stage.setResizable(true);
-        scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource("/styles.css")).toExternalForm());
-        stage.setTitle("Job Seeker");
-        stage.setScene(scene);
-        stage.show();
+        root.getChildren().add(sideBar);
     }
-
-    public void switchPage(String pageName) throws SQLException {
-        VBox page = pages.get(pageName);
-
-        if (page != null) {
-            if(pageName.equals("Saved Job Offers") || pageName.equals("Job Offers")) {
-                if (pageName.equals("Saved Job Offers") ){
-                    ((BookmarkedJobOffersPage)page).refreshBookmarkedJobs();
-                }
-                contentPane.setContent(page);
-            } else {
-                contentPane.setContent(page);
-                contentPane.setPrefHeight(1024);
-                contentPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-                contentPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-            }
-        } else {
-            System.out.println("Page not found: " + pageName);
-        }
-    }
-
-    private Map<Button, Boolean> clickedButtons;
-    private Map<Button, String> buttonNamePair;
 
     public VBox initializeSideBar() {
         VBox sideBar = new VBox(30);
         sideBar.setAlignment(Pos.CENTER);
         sideBar.setPadding(new javafx.geometry.Insets(20, 10, 20, 10));
 
-        String[] iconNames = {"Home", "Companies", "Job Offers", "Statistics", "Predictions", "Saved Job Offers"};
+        // Get pages for current role
+        List<String> pagesForRole = rolePages.get(currentRole);
+
         buttonNamePair = new HashMap<>();
         clickedButtons = new HashMap<>();
 
-        for (String iconName : iconNames) {
-            ImageView icon = new ImageView(new Image(Objects.requireNonNull(Dashboard.class.getResource("/com/example/jobseeker/" + iconName + ".png")).toExternalForm()));
-            icon.setFitHeight(45);
-            icon.setFitWidth(45);
-            icon.setPreserveRatio(true);
+        boolean firstButton = true;
+        for (String pageName : pagesForRole) {
+            // Load icon
+            ImageView icon = loadIcon(pageName);
 
-            Button clickableIcon = new Button(iconName, icon);
+            Button clickableIcon = new Button(pageName, icon);
             clickableIcon.setText("");
             clickableIcon.setFont(Font.font("Inter", FontWeight.BOLD, 22));
             clickableIcon.getStyleClass().add("sidebar-button");
             clickableIcon.setMaxWidth(Double.MAX_VALUE);
             clickableIcon.setAlignment(Pos.CENTER_LEFT);
 
-            buttonNamePair.put(clickableIcon, iconName);
+            buttonNamePair.put(clickableIcon, pageName);
 
-            if(clickedButtons.isEmpty()) {
+            if (firstButton) {
+                // Highlight first button
                 Image originalImage = ((ImageView)clickableIcon.getGraphic()).getImage();
                 Image coloredImage = changeImageColor(originalImage, Color.web("#CE7AFA"));
                 ImageView newImage = new ImageView(coloredImage);
@@ -164,6 +266,7 @@ public class Dashboard extends Application {
                 clickableIcon.setTextFill(Color.web("#CE7AFA"));
                 clickableIcon.setGraphic(newImage);
                 clickedButtons.put(clickableIcon, true);
+                firstButton = false;
             } else {
                 clickableIcon.setText("");
                 clickableIcon.setTextFill(Color.web("#7B4B94"));
@@ -179,8 +282,8 @@ public class Dashboard extends Application {
                 }
             });
 
-            clickableIcon.setOnMouseEntered(_ ->{
-                if(!clickedButtons.get(clickableIcon)){
+            clickableIcon.setOnMouseEntered(_ -> {
+                if (!clickedButtons.get(clickableIcon)) {
                     Image originalImage = ((ImageView)clickableIcon.getGraphic()).getImage();
                     Image coloredImage = changeImageColor(originalImage, Color.web("#CE7AFA"));
                     ImageView newImage = new ImageView(coloredImage);
@@ -193,8 +296,8 @@ public class Dashboard extends Application {
                 }
             });
 
-            clickableIcon.setOnMouseExited(_ ->{
-                if(!clickedButtons.get(clickableIcon)) {
+            clickableIcon.setOnMouseExited(_ -> {
+                if (!clickedButtons.get(clickableIcon)) {
                     clickableIcon.setGraphic(icon);
                     clickableIcon.setUnderline(false);
                     clickableIcon.setTextFill(Color.web("#7B4B94"));
@@ -211,6 +314,33 @@ public class Dashboard extends Application {
         return sideBar;
     }
 
+    // Helper method to load icons, with fallback handling
+    private ImageView loadIcon(String pageName) {
+        ImageView icon;
+        try {
+            icon = new ImageView(new Image(Objects.requireNonNull(
+                    Dashboard.class.getResource("/com/example/jobseeker/" + pageName + ".png")
+            ).toExternalForm()));
+        } catch (Exception e) {
+            // Fallback for icons that don't exist yet
+            System.out.println("Icon not found for: " + pageName + ". Using default icon.");
+            try {
+                // Use a generic icon as fallback
+                icon = new ImageView(new Image(Objects.requireNonNull(
+                        Dashboard.class.getResource("/com/example/jobseeker/Home.png")
+                ).toExternalForm()));
+            } catch (Exception ex) {
+                // Create an empty ImageView if all fails
+                icon = new ImageView();
+                System.out.println("Fallback icon not found either. Using empty icon.");
+            }
+        }
+        icon.setFitHeight(45);
+        icon.setFitWidth(45);
+        icon.setPreserveRatio(true);
+        return icon;
+    }
+
     private void handleButtonClick(Button clickableIcon, VBox sideBar) throws SQLException {
         clickedButtons.forEach((button, wasClicked) -> clickedButtons.put(button, button.equals(clickableIcon)));
 
@@ -225,14 +355,11 @@ public class Dashboard extends Application {
                     btn.setGraphic(newImage);
                     btn.setTextFill(Color.web("#CE7AFA"));
                     btn.setUnderline(true);
-                    //btn.setText("");
                     if (isSidebarExpanded) {
                         btn.setText(buttonNamePair.get(btn));
                     }
                 } else {
-                    btn.setGraphic(new ImageView(new Image(Objects.requireNonNull(
-                            Dashboard.class.getResource("/com/example/jobseeker/" + buttonNamePair.get(btn) + ".png")
-                    ).toExternalForm())));
+                    btn.setGraphic(loadIcon(buttonNamePair.get(btn)));
                     btn.setStyle("-fx-background-color: transparent;");
                     btn.setText(isSidebarExpanded ? buttonNamePair.get(btn) : "");
                     btn.setTextFill(Color.web("#7B4B94"));
@@ -307,6 +434,71 @@ public class Dashboard extends Application {
         }
     }
 
+    public void resetSideBar(String name) {
+        clickedButtons.forEach((clickableButton, clicked) -> {
+            if(clicked){
+                clickedButtons.put(clickableButton, false);
+            }
+        });
+        Button clickableButton = null;
+        for(Map.Entry<Button, String> entry : buttonNamePair.entrySet()){
+            if(entry.getValue().equalsIgnoreCase(name) ){
+                clickableButton = entry.getKey();
+                clickedButtons.put(clickableButton, true);
+                break;
+            }
+        }
+        if(clickableButton != null){
+            Image originalImage = ((ImageView)clickableButton.getGraphic()).getImage();
+            Image coloredImage = changeImageColor(originalImage, Color.web("#CE7AFA"));
+            ImageView newImage = new ImageView(coloredImage);
+            clickableButton.setGraphic(newImage);
+            clickableButton.setText(buttonNamePair.get(clickableButton));
+            clickableButton.setTextFill(Color.web("#CE7AFA"));
+            clickableButton.setUnderline(true);
+        }
+        for(Node node : sideBar.getChildren()){
+            if(node instanceof Button btn) {
+                if(!clickedButtons.get(btn)){
+                    btn.setGraphic(loadIcon(buttonNamePair.get(btn)));
+                    btn.setStyle("-fx-background-color: transparent;");
+                    btn.setText("");
+                    btn.getStyleClass().remove(".sidebar-button-selected");
+                } else {
+                    btn.getStyleClass().add(".sidebar-button-selected");
+                }
+            }
+        }
+    }
+
+    public void toggleBookmark(JobOffer jobOffer, int source) throws SQLException {
+        try {
+            // Update the JobOffersPage if we're coming from there
+            if (source == 1) {
+                jobOffersPage.updateUIAfterFiltering();
+            }
+
+            // Update the BookmarkedJobOffersPage regardless of source
+            if (pages.containsKey("Saved Job Offers")) {
+                ((BookmarkedJobOffersPage) pages.get("Saved Job Offers")).refreshBookmarkedJobs();
+            }
+        } catch (SQLException e) {
+            System.err.println("Error toggling bookmark: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    // Get current user for other components to check
+    public User getCurrentUser() {
+        return currentUser;
+    }
+
+    // Check if user is logged in and has specific role
+    public boolean isUserInRole(UserRole role) {
+        return currentRole == role;
+    }
+
     private static Image changeImageColor(Image originalImage, Color newColor) {
         int width = (int) originalImage.getWidth();
         int height = (int) originalImage.getHeight();
@@ -329,75 +521,8 @@ public class Dashboard extends Application {
 
         return writableImage;
     }
-    public void resetSideBar(String name){
 
-        clickedButtons.forEach((clickableButton, clicked) -> {
-            if(clicked){
-                clickedButtons.put(clickableButton, false);
-            }
-        });
-        Button clickableButton = null;
-        for(Map.Entry<Button, String> entry : buttonNamePair.entrySet()){
-            if(entry.getValue().equalsIgnoreCase(name) ){
-                clickableButton = entry.getKey();
-                clickedButtons.put(clickableButton, true);
-                break;
-
-            }
-        }
-        if(clickableButton != null){
-            Image originalImage = ((ImageView)clickableButton.getGraphic()).getImage();
-            Image coloredImage = changeImageColor(originalImage, Color.web("#CE7AFA"));
-            ImageView newImage = new ImageView(coloredImage);
-            clickableButton.setGraphic(newImage);
-            clickableButton.setText(buttonNamePair.get(clickableButton));
-            clickableButton.setTextFill(Color.web("#CE7AFA"));
-            clickableButton.setUnderline(true);
-        }
-        for( Node btn : sideBar.getChildren()){
-            if(!clickedButtons.get((Button) btn)){
-                ((Button) btn).setGraphic(new ImageView(new Image(Objects.requireNonNull(Dashboard.class.getResource("/com/example/jobseeker/" + buttonNamePair.get(btn) + ".png")).toExternalForm())));
-                btn.setStyle("-fx-background-color: transparent;");
-                ((Button) btn).setText("");
-                ((Button) btn).getStyleClass().remove(".sidebar-button-selected");
-            }else{
-                ((Button) btn).getStyleClass().add(".sidebar-button-selected");
-            }
-        }
-
-    }
-
-    public void toggleBookmark(JobOffer jobOffer, int source) throws SQLException {
-        try {
-            // Persist the change to database using the ViewModel
-
-
-            // Update the JobOffersPage if we're coming from there
-            if (source == 1) {
-                ((JobOffersPage) pages.get("Job Offers")).refreshJobOffers(jobOffer);
-            }
-
-            // Update the BookmarkedJobOffersPage regardless of source
-            // This ensures that the bookmarked page is always up to date
-            if (pages.containsKey("Saved Job Offers")) {
-                ((BookmarkedJobOffersPage) pages.get("Saved Job Offers")).refreshBookmarkedJobs();
-            }
-        } catch (SQLException e) {
-            // Handle any database errors
-            System.err.println("Error toggling bookmark: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
-        }
-    }
-
-    public static void main(String[] args){
-        //masterJobOffersList = new ArrayList<>( JobOffer.getDummyData());
-       // try{
-            //masterJobOffersList = DatabaseUtil.getAllJobOffers();
-            launch();
-      //  }catch(SQLException e){
-      //      System.out.println("Problem de SQL !");
-      //      e.printStackTrace();
-      //  }
+    public static void main(String[] args) {
+        launch();
     }
 }

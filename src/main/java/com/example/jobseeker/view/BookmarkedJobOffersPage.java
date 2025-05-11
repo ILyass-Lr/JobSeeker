@@ -11,27 +11,32 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 
 public class BookmarkedJobOffersPage extends JobOffersList {
-    private final Dashboard dashboard;
+
     private List<JobOffer> filteredOffers;
     public BookmarkedJobOffersPage(Dashboard dashboard, JobOfferViewModel jobOfferViewModel) throws SQLException {
-        super("You haven't saved any job offers yet.", jobOfferViewModel);
-        this.dashboard = dashboard;
+        super("You haven't saved any job offers yet.", jobOfferViewModel, dashboard);
         refreshBookmarkedJobs();
     }
 
     @Override
     protected void initializeData() throws SQLException {
         // Initially get saved job offers
-        viewModel.loadSavedJobOffers();
-        filteredOffers = viewModel.getSavedJobOffers();
+        if (dashboard.getCurrentUser() != null){
+            viewModel.loadSavedJobOffers(dashboard.getCurrentUser().getId());
+            filteredOffers = viewModel.getSavedJobOffers();
+        }else{
+            filteredOffers = new ArrayList<JobOffer>();
+        }
+
     }
 
     @Override
-    protected void initialize() {
+    protected void initialize() throws SQLException {
         HBox mainContent = new HBox(14, listingContainer, detailsContainer);
         mainContent.setAlignment(Pos.TOP_CENTER);
         mainContent.setMaxHeight(950);
@@ -53,22 +58,22 @@ public class BookmarkedJobOffersPage extends JobOffersList {
 
         // Toggle the saved state
         //boolean newSavedState = !viewModel.getSelectedJobOffer().getIsSaved();
-        viewModel.getSelectedJobOffer().setIsSaved(!viewModel.getSelectedJobOffer().getIsSaved());
+        viewModel.toggleJobOfferSavedState(dashboard.getCurrentUser().getId(), jobOffer);
 
         // Update the UI
         save.getStyleClass().clear();
-        save.getStyleClass().add( viewModel.getSelectedJobOffer().getIsSaved() ? "details-button-bookmark-saved" : "details-button-bookmark-unsaved");
+        save.getStyleClass().add( viewModel.isSaved(dashboard.getCurrentUser().getId(), jobOffer) ? "details-button-bookmark-saved" : "details-button-bookmark-unsaved");
 
         if (selectedCard != null) {
             bookmarkIcon.getStyleClass().clear();
-            bookmarkIcon.getStyleClass().add(viewModel.getSelectedJobOffer().getIsSaved() ? "job-card-bookmark-saved" : "job-card-bookmark-unsaved");
+            bookmarkIcon.getStyleClass().add(viewModel.isSaved(dashboard.getCurrentUser().getId(), jobOffer) ? "job-card-bookmark-saved" : "job-card-bookmark-unsaved");
         }
 
         // Use dashboard to persist the change and update both pages
         dashboard.toggleBookmark(jobOffer, 2);
 
         // If we're removing a bookmark from the bookmarked page, refresh immediately
-        if (!viewModel.getSelectedJobOffer().getIsSaved()) {
+        if (!viewModel.isSaved(dashboard.getCurrentUser().getId(), jobOffer)) {
             refreshBookmarkedJobs();
         }
     }
@@ -96,7 +101,12 @@ public class BookmarkedJobOffersPage extends JobOffersList {
             }
             for (int i = startIdx; i < endIdx; i++) {
                 JobOffer offer = viewModel.getSavedJobOffers().get(i);
-                VBox jobCard = createJobCard(offer);
+                VBox jobCard = null;
+                try {
+                    jobCard = createJobCard(offer);
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
                 if (offer.equals(viewModel.getSelectedJobOffer())) {
                     jobCard.getStyleClass().clear();
                     jobCard.getStyleClass().add("job-card-selected");
@@ -109,7 +119,7 @@ public class BookmarkedJobOffersPage extends JobOffersList {
 
     public void refreshBookmarkedJobs() throws SQLException {
         // Get a fresh list of saved job offers from the database
-        viewModel.loadSavedJobOffers();
+        //viewModel.loadSavedJobOffers();
         filteredOffers = viewModel.getSavedJobOffers();
 
         if (filteredOffers.isEmpty()) {

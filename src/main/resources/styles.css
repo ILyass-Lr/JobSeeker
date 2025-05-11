@@ -325,5 +325,21 @@ details-location{
     -fx-border-color: derive(-fx-pie-color, -40%);
 }
 
+/*Sign In page*/
+.signIn-button{
+    -fx-text-fill: #3D3A4B;
+    -fx-font-weight: bold;
+    -fx-font-family: "Inter";
+    -fx-font-size: 26px;
+    -fx-background-color: #FEFCC2;
+    -fx-background-radius: 15px;
+}
+.signIn-button:hover{
+    -fx-background-color: #f3f17c;
+    -fx-text-fill: #201f27;
+    -fx-font-weight: bolder;
+    -fx-effect: dropshadow(gaussian, #9adad8, 15, 0, 0, 0);
+}
+
 
 

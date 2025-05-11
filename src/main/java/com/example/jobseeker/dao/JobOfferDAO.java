@@ -1,6 +1,8 @@
 package com.example.jobseeker.dao;
-
-import com.example.jobseeker.model.*;
+import com.example.jobseeker.model.Education;
+import com.example.jobseeker.model.Experience;
+import com.example.jobseeker.model.JobOffer;
+import com.example.jobseeker.model.Location;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -21,7 +23,7 @@ public class JobOfferDAO {
         String sql = """
         SELECT DISTINCT
             j.id, j.title, j.description, j.requirements, j.contract, j.telework,
-            j.salary, j.industry, j.post_date, j.deadline, j.is_saved,
+            j.salary, j.industry, j.post_date, j.deadline,
             e.elevel as edu_level, e.field as edu_field, e.diploma,
             ex.min_years, ex.max_years, ex.exlevel as exp_level, ex.description as exp_description,
             l.city, l.region, l.country, l.address,
@@ -114,7 +116,7 @@ public class JobOfferDAO {
         String query = """
             SELECT DISTINCT
                 j.id, j.title, j.description, j.requirements, j.contract, j.telework,
-                j.salary, j.industry, j.post_date, j.deadline, j.is_saved,
+                j.salary, j.industry, j.post_date, j.deadline,
                 e.elevel AS edu_level, e.field AS edu_field, e.diploma,
                 ex.min_years, ex.max_years, ex.exlevel AS exp_level, ex.description AS exp_description,
                 l.city, l.region, l.country, l.address,
@@ -148,12 +150,12 @@ public class JobOfferDAO {
     }
 
 
-    public List<JobOffer> searchJobOffers(String searchText, String dateFilter, String contractFilter, String locationFilter, String teleworkFilter) throws SQLException {
+    public List<JobOffer> searchJobOffers(String searchText, int dateFilter, String contractFilter, String locationFilter, String teleworkFilter) throws SQLException {
         List<JobOffer> jobOffers = new ArrayList<>();
         String query = """
             SELECT DISTINCT
                 j.id, j.title, j.description, j.requirements, j.contract, j.telework,
-                j.salary, j.industry, j.post_date, j.deadline, j.is_saved,
+                j.salary, j.industry, j.post_date, j.deadline,
                 e.elevel AS edu_level, e.field AS edu_field, e.diploma,
                 ex.min_years, ex.max_years, ex.exlevel AS exp_level, ex.description AS exp_description,
                 l.city, l.region, l.country, l.address,
@@ -169,9 +171,9 @@ public class JobOfferDAO {
                 OR LOWER(j.description) LIKE ?
                 )
               AND j.post_date >= SYSDATE - ?
-              AND j.contract = ?
-              AND j.telework = ?
-              AND l.city = ?
+              AND j.contract LIKE ?
+              AND j.telework LIKE ?
+              AND l.city LIKE ?
             ORDER BY j.post_date DESC
             """;
         String searchPattern = "%" + searchText.toLowerCase() + "%";
@@ -180,13 +182,8 @@ public class JobOfferDAO {
             statement.setString(1, searchPattern);
             statement.setString(2, searchPattern);
             statement.setString(3, searchPattern);
-            int daysNumber = switch (dateFilter) {
-                case "Past 24 hours" -> 1;
-                case "Past week" -> 7;
-                case "Past month" -> 30;
-                default -> 5*356;
-            };
-            statement.setInt(4, daysNumber);
+
+            statement.setInt(4, dateFilter);
             statement.setString(5, contractFilter);
             statement.setString(6, locationFilter);
             statement.setString(7, teleworkFilter);
@@ -199,41 +196,70 @@ public class JobOfferDAO {
                 }
             }
         }
+        if(!jobOffers.isEmpty()){
+            System.out.println("Found " + jobOffers.size() + " job offers");
+        }
 
         return jobOffers;
     }
 
-    public void updateJobOfferSavedState(JobOffer jobOffer) throws SQLException {
-        String sql = "UPDATE job_posts SET is_saved = ? WHERE id = ?";
+    public boolean isJobOfferSaved(int userId, int jobPostId) throws SQLException {
+        String sql = "SELECT 1 FROM saved_offers WHERE ID_USER = ? AND ID_OFFER = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setBoolean(1, jobOffer.getIsSaved());
-            stmt.setInt(2, jobOffer.getId()); // Assuming JobOffer has an ID field
-            stmt.executeUpdate();
+            stmt.setInt(1, userId);
+            stmt.setInt(2, jobPostId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next(); // If a record exists, job offer is saved
+            }
         }
     }
 
 
-    public List<JobOffer> getSavedJobOffers() throws SQLException {
+    public void updateJobOfferSavedState(int jobOfferId, int userId) throws SQLException {
+        if (!isJobOfferSaved(userId, jobOfferId)) {
+            // Save the offer (Insert)
+            String insertSql = "INSERT INTO saved_offers (ID_USER, ID_OFFER) VALUES (?, ?)";
+            try (PreparedStatement stmt = connection.prepareStatement(insertSql)) {
+                stmt.setInt(1, userId);
+                stmt.setInt(2, jobOfferId);
+                stmt.executeUpdate();
+            }
+        } else {
+            // Unsave the offer (Delete)
+            String deleteSql = "DELETE FROM saved_offers WHERE ID_USER = ? AND ID_OFFER = ?";
+            try (PreparedStatement stmt = connection.prepareStatement(deleteSql)) {
+                stmt.setInt(1, userId);
+                stmt.setInt(2, jobOfferId);
+                stmt.executeUpdate();
+            }
+        }
+    }
+
+
+
+    public List<JobOffer> getSavedJobOffers(int userId) throws SQLException {
         List<JobOffer> savedJobOffers = new ArrayList<>();
         String sql = """
         SELECT DISTINCT
-            j.id, j.title, j.description, j.requirements, j.contract, j.telework,
-            j.salary, j.industry, j.post_date, j.deadline, j.is_saved,
-            e.elevel as edu_level, e.field as edu_field, e.diploma,
-            ex.min_years, ex.max_years, ex.exlevel as exp_level, ex.description as exp_description,
-            l.city, l.region, l.country, l.address,
-            c.name as company_name
-        FROM job_posts j
+        j.id, j.title, j.description, j.requirements, j.contract, j.telework,
+        j.salary, j.industry, j.post_date, j.deadline,
+        e.elevel AS edu_level, e.field AS edu_field, e.diploma,
+        ex.min_years, ex.max_years, ex.exlevel AS exp_level, ex.description AS exp_description,
+        l.city, l.region, l.country, l.address,
+        c.name AS company_name
+        FROM saved_offer s
+        JOIN job_posts j ON s.ID_OFFER = j.id
         LEFT JOIN job_education e ON j.id = e.job_post_id
         LEFT JOIN job_experience ex ON j.id = ex.job_post_id
         LEFT JOIN job_locations l ON j.id = l.job_post_id
         LEFT JOIN companies c ON j.company = c.id
-        WHERE j.is_saved = 1
-        ORDER BY j.post_date DESC
+        WHERE s.ID_USER = ?
+        ORDER BY j.post_date DESC;
         """;
 
 
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
             try (ResultSet rs = stmt.executeQuery()) {
 
                 while (rs.next()) {
@@ -270,7 +296,7 @@ public class JobOfferDAO {
         Timestamp postDate = rs.getTimestamp("post_date");
         Timestamp deadline = rs.getTimestamp("deadline");
 
-        return new JobOffer(
+        return  new JobOffer(
                 rs.getInt("id"),
                 rs.getString("title"),
                 rs.getString("company_name"),
@@ -286,7 +312,6 @@ public class JobOfferDAO {
                 rs.getString("salary"),
                 rs.getString("requirements"),
                 rs.getString("industry"),
-                rs.getInt("is_saved") == 1,// isSaved is not stored in the database
                 rs.getString("telework"),
                 deadline != null ? deadline.toLocalDateTime() : null
         );
