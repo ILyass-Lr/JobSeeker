@@ -170,15 +170,20 @@ public class Dashboard extends Application {
                 if (pageName.equals("Saved Job Offers")) {
                     ((BookmarkedJobOffersPage)page).refreshBookmarkedJobs();
                 }else if (pageName.equals("Job Offers")) {
+
                     jobOffersPage.updateUIAfterFiltering();
                 }
                 contentPane.setContent(page);
-            } else {
+            } else if (pageName.equals("Log in - Log out")) {
+                signUpView.clearView();
+                contentPane.setContent(page);
+            }else{
                 contentPane.setContent(page);
                 contentPane.setPrefHeight(1024);
                 contentPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
                 contentPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
             }
+
         } else {
             System.out.println("Page not found: " + pageName);
         }

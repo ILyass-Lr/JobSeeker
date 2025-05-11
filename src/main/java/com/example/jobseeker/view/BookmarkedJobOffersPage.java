@@ -37,6 +37,7 @@ public class BookmarkedJobOffersPage extends JobOffersList {
 
     @Override
     protected void initialize() throws SQLException {
+        initializeData();
         HBox mainContent = new HBox(14, listingContainer, detailsContainer);
         mainContent.setAlignment(Pos.TOP_CENTER);
         mainContent.setMaxHeight(950);
@@ -120,16 +121,15 @@ public class BookmarkedJobOffersPage extends JobOffersList {
     public void refreshBookmarkedJobs() throws SQLException {
         // Get a fresh list of saved job offers from the database
         //viewModel.loadSavedJobOffers();
-        filteredOffers = viewModel.getSavedJobOffers();
+        initialize();
+        //filteredOffers = viewModel.getSavedJobOffers();
 
         if (filteredOffers.isEmpty()) {
             selectedCard = null;
             showNoJobOffersMessage(message);
         } else {
             // Select the first offer if available
-            if (!filteredOffers.isEmpty()) {
-                viewModel.selectJobOffer(filteredOffers.getFirst());
-            }
+            viewModel.selectJobOffer(filteredOffers.getFirst());
             currentPage = 1;
             updateJobListings();
             updatePaginationControls();

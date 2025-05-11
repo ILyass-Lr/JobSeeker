@@ -34,6 +34,11 @@ public class SignUpView extends VBox {
         bindViewModel();
         setupEventHandlers();
     }
+    public void clearView(){
+        emailTextField.setText("");
+        passwordField.setText("");
+        confirmPasswordField.setText("");
+    }
 
     private void bindViewModel() {
         // Bind text fields to view model properties

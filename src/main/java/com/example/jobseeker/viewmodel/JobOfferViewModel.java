@@ -86,13 +86,13 @@ public class JobOfferViewModel {
             case "Past month" -> 30;
             default -> 5*356;
         };
+        String searchPattern = "%" + searchText.toLowerCase() + "%";
+        contractSearch = (!contractFilter.equalsIgnoreCase("Any Contract Type") && !contractFilter.isEmpty()) ? contractFilter : "%";
+        locationSearch = (!locationFilter.equalsIgnoreCase("Any Location") && !locationFilter.isEmpty()) ? locationFilter : "%";
+        teleworkSearch = (!teleworkFilter.equalsIgnoreCase("Any TeleWork Type") && !teleworkFilter.isEmpty()) ? teleworkFilter : "%";
 
-        contractSearch = (!contractFilter.equalsIgnoreCase("Any Contract Type")) ? contractFilter : "%";
-        locationSearch = (!contractFilter.equalsIgnoreCase("Any Location")) ? locationFilter : "%";
-        teleworkSearch = (!teleworkFilter.equalsIgnoreCase("Any TeleWork Type")) ? teleworkFilter : "%";
 
-
-        List<JobOffer> filteredJobOffers = jobOfferDAO.searchJobOffers(searchText, daysNumber, contractSearch, locationSearch, teleworkSearch);
+        List<JobOffer> filteredJobOffers = jobOfferDAO.searchJobOffers(searchPattern, daysNumber, contractSearch, locationSearch, teleworkSearch);
         jobOffers.clear();
         jobOffers.addAll(filteredJobOffers);
 

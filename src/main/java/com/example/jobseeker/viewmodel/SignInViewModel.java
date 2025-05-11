@@ -33,7 +33,11 @@ public class SignInViewModel {
             errorMessage.set("Email Not Found!");
             return null;
         }else{
-            return  userDAO.findUserByEmailAndPassword(email.get(), password.get());
+            User user = userDAO.findUserByEmailAndPassword(email.get(), password.get());
+            if (user == null) {
+                errorMessage.set("Invalid Password!");
+            }
+            return user;
         }
 
     }

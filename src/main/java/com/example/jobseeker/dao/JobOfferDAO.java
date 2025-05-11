@@ -153,7 +153,7 @@ public class JobOfferDAO {
     public List<JobOffer> searchJobOffers(String searchText, int dateFilter, String contractFilter, String locationFilter, String teleworkFilter) throws SQLException {
         List<JobOffer> jobOffers = new ArrayList<>();
         String query = """
-            SELECT DISTINCT
+                SELECT DISTINCT
                 j.id, j.title, j.description, j.requirements, j.contract, j.telework,
                 j.salary, j.industry, j.post_date, j.deadline,
                 e.elevel AS edu_level, e.field AS edu_field, e.diploma,
@@ -167,38 +167,41 @@ public class JobOfferDAO {
                      LEFT JOIN companies c ON j.company = c.id
             WHERE (
                 LOWER(j.title) LIKE ?
-                OR LOWER(c.name) LIKE ?
-                OR LOWER(j.description) LIKE ?
+                    OR LOWER(c.name) LIKE ?
+                    OR LOWER(j.description) LIKE ?
                 )
               AND j.post_date >= SYSDATE - ?
-              AND j.contract LIKE ?
-              AND j.telework LIKE ?
-              AND l.city LIKE ?
+              AND LOWER(j.contract) LIKE ?
+              AND LOWER(j.telework) LIKE ?
+              AND LOWER(l.city) LIKE ?
             ORDER BY j.post_date DESC
             """;
-        String searchPattern = "%" + searchText.toLowerCase() + "%";
+
 
         try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, searchPattern);
-            statement.setString(2, searchPattern);
-            statement.setString(3, searchPattern);
+            statement.setString(1, searchText);
+            statement.setString(2, searchText);
+            statement.setString(3, searchText);
+            statement.setDouble(4, (double) dateFilter);
+            statement.setString(5, contractFilter.toLowerCase());
 
-            statement.setInt(4, dateFilter);
-            statement.setString(5, contractFilter);
-            statement.setString(6, locationFilter);
-            statement.setString(7, teleworkFilter);
-
+            statement.setString(6, teleworkFilter.toLowerCase());
+            statement.setString(7, locationFilter.toLowerCase());
 
 
             try (ResultSet resultSet = statement.executeQuery()) {
+
+
                 while (resultSet.next()) {
                     jobOffers.add(mapResultSetToJobOffer(resultSet));
                 }
+            }catch (Exception e) {
+                e.printStackTrace(); // make sure you see errors
             }
         }
-        if(!jobOffers.isEmpty()){
+
             System.out.println("Found " + jobOffers.size() + " job offers");
-        }
+
 
         return jobOffers;
     }
@@ -239,6 +242,7 @@ public class JobOfferDAO {
 
     public List<JobOffer> getSavedJobOffers(int userId) throws SQLException {
         List<JobOffer> savedJobOffers = new ArrayList<>();
+        System.out.println(userId);
         String sql = """
         SELECT DISTINCT
         j.id, j.title, j.description, j.requirements, j.contract, j.telework,
@@ -247,14 +251,14 @@ public class JobOfferDAO {
         ex.min_years, ex.max_years, ex.exlevel AS exp_level, ex.description AS exp_description,
         l.city, l.region, l.country, l.address,
         c.name AS company_name
-        FROM saved_offer s
+        FROM saved_offers s
         JOIN job_posts j ON s.ID_OFFER = j.id
         LEFT JOIN job_education e ON j.id = e.job_post_id
         LEFT JOIN job_experience ex ON j.id = ex.job_post_id
         LEFT JOIN job_locations l ON j.id = l.job_post_id
         LEFT JOIN companies c ON j.company = c.id
         WHERE s.ID_USER = ?
-        ORDER BY j.post_date DESC;
+        ORDER BY j.post_date DESC
         """;
 
 

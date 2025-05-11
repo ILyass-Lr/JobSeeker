@@ -76,7 +76,7 @@ public class UserDAO {
                         rs.getString("U_ROLE")
                 );
                 user.setId(rs.getInt("ID"));
-                System.out.println("Found one");
+
                 return user;
             }else{
                 return null;

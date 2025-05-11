@@ -51,8 +51,6 @@ public class SignInView extends VBox {
             User user = viewModel.connectUser();
             if (user != null) {
                     dashboard.setCurrentUser(user);
-            }else{
-                viewModel.errorMessageProperty().set("Password incorrect!");
             }
         });
 
@@ -67,7 +65,7 @@ public class SignInView extends VBox {
     }
 
     private void setupView() {
-        this.setMinHeight(1010);
+        this.setMinHeight(1018);
         // Main container setup
         this.setAlignment(Pos.CENTER);
         this.setPadding(new Insets(28, 50, 30, 50));
