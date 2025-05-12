@@ -4,8 +4,8 @@ import java.sql.Timestamp;
 
 public class JobApplication {
     private int id;
-    private int jobId;
-    private int candidateId;
+    //private int jobId;
+    //private int candidateId;
     private Timestamp applyDate;
     private byte[] cvFile;
     private String cvFilename;
@@ -15,15 +15,25 @@ public class JobApplication {
     private String coverLetterFiletype;
     private String status;
 
+    public JobApplication(Timestamp applyDate, byte[] cvFile, String cvFilename, String cvFiletype, byte[] coverLetterFile, String coverLetterFilename, String coverLetterFiletype, String status) {
+        //this.jobId = jobId;
+        //this.candidateId = candidateId;
+        this.applyDate = applyDate;
+        this.cvFile = cvFile;
+        this.cvFilename = cvFilename;
+        this.cvFiletype = cvFiletype;
+        this.coverLetterFile = coverLetterFile;
+        this.coverLetterFilename = coverLetterFilename;
+        this.coverLetterFiletype = coverLetterFiletype;
+        this.status = status;
+    }
+
+
+
     // Getters et Setters
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
-    public int getJobId() { return jobId; }
-    public void setJobId(int jobId) { this.jobId = jobId; }
-
-    public int getCandidateId() { return candidateId; }
-    public void setCandidateId(int candidateId) { this.candidateId = candidateId; }
 
     public Timestamp getApplyDate() { return applyDate; }
     public void setApplyDate(Timestamp applyDate) { this.applyDate = applyDate; }

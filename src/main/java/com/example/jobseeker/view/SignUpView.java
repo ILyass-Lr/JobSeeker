@@ -57,8 +57,8 @@ public class SignUpView extends VBox {
             boolean success = viewModel.registerUser();
             if (success) {
                 try {
-                    Dashboard.pages.put("Log in - Log out", Dashboard.signInView);
-                    dashboard.switchPage("Log in - Log out");
+                    Dashboard.pages.put("Sign up - Sign in", Dashboard.signInView);
+                    dashboard.switchPage("Sign up - Sign in");
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
@@ -67,8 +67,8 @@ public class SignUpView extends VBox {
 
         signInButton.setOnAction(event -> {
             try {
-                Dashboard.pages.put("Log in - Log out", Dashboard.signInView);
-                dashboard.switchPage("Log in - Log out");
+                Dashboard.pages.put("Sign up - Sign in", Dashboard.signInView);
+                dashboard.switchPage("Sign up - Sign in");
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

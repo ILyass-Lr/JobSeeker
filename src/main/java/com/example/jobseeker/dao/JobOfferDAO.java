@@ -149,6 +149,39 @@ public class JobOfferDAO {
         return jobOffers;
     }
 
+    public List<JobOffer> searchJobOffersByRecruiter(int recruiterId) throws SQLException {
+        List<JobOffer> jobOffers = new ArrayList<>();
+        String query = """
+            SELECT DISTINCT
+                j.id, j.title, j.description, j.requirements, j.contract, j.telework,
+                j.salary, j.industry, j.post_date, j.deadline,
+                e.elevel AS edu_level, e.field AS edu_field, e.diploma,
+                ex.min_years, ex.max_years, ex.exlevel AS exp_level, ex.description AS exp_description,
+                l.city, l.region, l.country, l.address,
+                c.name AS company_name
+            FROM job_posts j
+                     LEFT JOIN job_education e ON j.id = e.job_post_id
+                     LEFT JOIN job_experience ex ON j.id = ex.job_post_id
+                     LEFT JOIN job_locations l ON j.id = l.job_post_id
+                     LEFT JOIN companies c ON j.company = c.id
+            WHERE COMPANY = (SELECT COMPANY_ID FROM RECRUITERS WHERE USER_ID = ?)
+            ORDER BY j.post_date DESC
+            """;
+
+
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setInt(1, recruiterId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    jobOffers.add(mapResultSetToJobOffer(resultSet));
+                }
+            }
+        }
+
+        return jobOffers;
+    }
+
 
     public List<JobOffer> searchJobOffers(String searchText, int dateFilter, String contractFilter, String locationFilter, String teleworkFilter) throws SQLException {
         List<JobOffer> jobOffers = new ArrayList<>();

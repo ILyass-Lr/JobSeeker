@@ -340,6 +340,57 @@ details-location{
     -fx-font-weight: bolder;
     -fx-effect: dropshadow(gaussian, #9adad8, 15, 0, 0, 0);
 }
+/* Form Application Container */
+.back-button {
+    -fx-background-color: #7B4B94;
+    -fx-background-radius: 5;
+}
+.back-button:hover {
+    -fx-background-color: #935fb3; /* Lighter shade for hover effect */
+}
+.signIn-button{
+    -fx-text-fill: #3D3A4B;
+    -fx-font-weight: medium;
+    -fx-font-family: "Inter";
+    -fx-font-size: 26px;
+    -fx-background-color: #FEFCC2;
+    -fx-background-radius: 15px;
+}
+.signIn:hover{
+    -fx-background-color: #f3f17c;
+    -fx-text-fill: #201f27;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, #9adad8, 15, 0, 0, 0);
+}
+.application-text-field {
+    -fx-padding: 0 0 0 22;             /* Top Right Bottom Left */
+    -fx-pref-width: 424;
+    -fx-pref-height: 66;
+    -fx-background-color: white;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-color: #7B4B94;
+    -fx-border-width: 1;
+    -fx-font-size: 14px;
+}
+.submit-button{
+    -fx-text-fill: #ededed;
+    -fx-font-weight: bold;
+    -fx-font-family: "Inter";
+    -fx-font-size: 18px;
+    -fx-background-color: #5042A3;
+    -fx-background-radius: 10px;
+}
+.submit-button:hover{
+    -fx-background-color: #705BED;
+    -fx-font-weight: bolder;
+    -fx-background-radius: 10px;
+    -fx-effect: dropshadow(gaussian, #9adad8, 15, 0, 0, 0);
+}
+
+
+
+
 
 
 

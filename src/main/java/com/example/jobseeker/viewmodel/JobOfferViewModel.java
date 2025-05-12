@@ -113,6 +113,18 @@ public class JobOfferViewModel {
         updateTotalPages();
     }
 
+    public void searchJobOffersByRecruiter(int recruiterId) throws SQLException {
+        List<JobOffer> filteredJobOffers = jobOfferDAO.searchJobOffersByRecruiter(recruiterId);
+
+
+        jobOffers.clear();
+        jobOffers.addAll(filteredJobOffers);
+
+        // Reset to first page and update total pages
+        currentPage.set(1);
+        updateTotalPages();
+    }
+
     // Select a job offer
     public void selectJobOffer(JobOffer jobOffer) {
         selectedJobOffer.set(jobOffer);

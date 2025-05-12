@@ -1,16 +1,14 @@
 package com.example.jobseeker;
 
 import com.example.jobseeker.dao.CompanyDAO;
+import com.example.jobseeker.dao.JobApplicationDAO;
 import com.example.jobseeker.dao.JobOfferDAO;
 import com.example.jobseeker.dao.UserDAO;
 import com.example.jobseeker.model.JobOffer;
 import com.example.jobseeker.model.User;
 import com.example.jobseeker.util.DatabaseUtil;
 import com.example.jobseeker.view.*;
-import com.example.jobseeker.viewmodel.CompanyViewModel;
-import com.example.jobseeker.viewmodel.JobOfferViewModel;
-import com.example.jobseeker.viewmodel.SignInViewModel;
-import com.example.jobseeker.viewmodel.SignUpViewModel;
+import com.example.jobseeker.viewmodel.*;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
@@ -66,11 +64,14 @@ public class Dashboard extends Application {
         CompanyDAO companyDAO = new CompanyDAO(connection);
         JobOfferDAO jobOfferDAO = new JobOfferDAO(connection);
         UserDAO userDAO = new UserDAO(connection);
+        JobApplicationDAO jobApplicationDAO = new JobApplicationDAO(connection);
 
         CompanyViewModel companyViewModel = new CompanyViewModel(companyDAO);
         JobOfferViewModel jobOfferViewModel = new JobOfferViewModel(jobOfferDAO);
         SignUpViewModel signUpViewModel = new SignUpViewModel(userDAO);
         SignInViewModel signInViewModel = new SignInViewModel(userDAO);
+        JobApplicationViewModel applicationViewModel = new JobApplicationViewModel(jobApplicationDAO);
+
 
         jobOfferViewModel.loadJobOffers();
         masterJobOffersList = jobOfferViewModel.getJobOffers();
@@ -78,10 +79,10 @@ public class Dashboard extends Application {
         // Switched Pages
         signInView = new SignInView(signInViewModel, this);
         signUpView = new SignUpView(signUpViewModel, this);
-        jobOffersPage = new JobOffersPage(this, jobOfferViewModel);
+        jobOffersPage = new JobOffersPage(this, jobOfferViewModel, applicationViewModel);
 
         // Initialize all possible pages
-        initializeAllPages(jobOfferViewModel, companyViewModel, signInViewModel);
+        initializeAllPages(jobOfferViewModel, companyViewModel, signInViewModel, applicationViewModel);
 
         // Set up role-based page access
         initializeRolePages();
@@ -115,12 +116,12 @@ public class Dashboard extends Application {
         stage.show();
     }
 
-    private void initializeAllPages(JobOfferViewModel jobOfferViewModel, CompanyViewModel companyViewModel, SignInViewModel signInViewModel) throws SQLException {
+    private void initializeAllPages(JobOfferViewModel jobOfferViewModel, CompanyViewModel companyViewModel, SignInViewModel signInViewModel, JobApplicationViewModel applicationViewModel) throws SQLException {
         pages = new HashMap<String, VBox>();
 
         // Common pages for all users
         pages.put("Home", new HomePage(this));
-        pages.put("Log in - Log out", signInView);
+        pages.put("Sign up - Sign in", signInView);
 
         // Candidate specific pages
         pages.put("Companies", new CompaniesPage(this, companyViewModel));
@@ -130,7 +131,7 @@ public class Dashboard extends Application {
 
         // Recruiter specific pages
         pages.put("Create Job Offer", new CreateJobOfferView(this));
-        pages.put("My Job Listings", new MyJobListingsView(this));
+        pages.put("My Job Listings", new JobListingView(this, jobOfferViewModel,applicationViewModel ));
     }
 
     private void initializeRolePages() {
@@ -139,7 +140,7 @@ public class Dashboard extends Application {
                 "Home",
                 "Companies",
                 "Job Offers",
-                "Log in - Log out"
+                "Sign up - Sign in"
         ));
 
         // Pages visible to logged in candidates
@@ -174,7 +175,7 @@ public class Dashboard extends Application {
                     jobOffersPage.updateUIAfterFiltering();
                 }
                 contentPane.setContent(page);
-            } else if (pageName.equals("Log in - Log out")) {
+            } else if (pageName.equals("Sign up - Sign in")) {
                 signUpView.clearView();
                 contentPane.setContent(page);
             }else{

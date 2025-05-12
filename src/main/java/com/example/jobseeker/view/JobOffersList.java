@@ -14,7 +14,10 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
+import javafx.stage.FileChooser;
+
 import java.awt.Desktop;
+import java.io.File;
 import java.net.URI;
 import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
@@ -79,6 +82,7 @@ abstract class JobOffersList extends VBox {
     protected abstract void initialize() throws SQLException;
     protected abstract void handleSaveButton(Button save, Button bookmark) throws SQLException;
     protected abstract void updateJobListings();
+
     private ScrollPane createJobListingsSection() {
         ScrollPane listingsSectionPane = new ScrollPane();
         listingsSectionPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
@@ -143,6 +147,163 @@ abstract class JobOffersList extends VBox {
         });
     }
 
+    protected void updateJobDetailsForApplication() throws SQLException {
+        if (viewModel.getSelectedJobOffer() == null) return;
+
+        detailsContainer.getChildren().clear();
+
+        // Back button
+        Button backButton = new Button();
+        backButton.setPrefSize(45, 45);
+        backButton.getStyleClass().add("back-button");
+
+        // Use a placeholder for the back icon - you'll need to replace with your icon
+        ImageView backIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResource("/com/example/jobseeker/Back.png")).toExternalForm()));
+        backIcon.setFitHeight(24);
+        backIcon.setFitWidth(24);
+        backIcon.setPreserveRatio(true);
+
+        backButton.setGraphic(backIcon);
+        backButton.setOnAction(_ -> {
+            try {
+                updateJobDetails();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+        // Job title
+        Label titleLabel = new Label(viewModel.getSelectedJobOffer().getTitle());
+        titleLabel.getStyleClass().add("details-title");
+
+        HBox backButton_Title = new HBox(15);
+        backButton_Title.setAlignment(Pos.CENTER_LEFT);
+        backButton_Title.getChildren().addAll(backButton, titleLabel);
+
+        // Company name
+        Label companyLabel = new Label(viewModel.getSelectedJobOffer().getCompany());
+        companyLabel.getStyleClass().add("details-company");
+
+        // Location
+        Label locationLabel = new Label(viewModel.getSelectedJobOffer().getLocation().getCity());
+        locationLabel.getStyleClass().add("details-location");
+
+        // Job Application title
+        Label applicationTitleLabel = new Label("Job Application:");
+        applicationTitleLabel.setFont(Font.font("Inter", FontWeight.BOLD, 28));
+        applicationTitleLabel.setTextFill(Color.web("#44AAFE"));
+        applicationTitleLabel.setUnderline(true);
+        VBox.setMargin(applicationTitleLabel, new Insets(20, 0, 30, 0));
+
+        // Contact Number field
+        ImageView phoneIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResource("/com/example/jobseeker/phoneNumber.png")).toExternalForm()));
+        phoneIcon.setFitHeight(45);
+        phoneIcon.setFitWidth(45);
+        phoneIcon.setPreserveRatio(true);
+
+        TextField contactNumberField = new TextField();
+        contactNumberField.setPrefSize(424, 66);
+        contactNumberField.setPromptText("Enter your Contact Number");
+        contactNumberField.getStyleClass().add("application-text-field");
+        detailsContainer.setMargin(contactNumberField, new Insets(10, 0, 10, 0));
+
+        HBox contactNumberContainer = new HBox(15);
+        contactNumberContainer.setAlignment(Pos.CENTER_LEFT);
+        contactNumberContainer.getChildren().addAll(phoneIcon, contactNumberField);
+        VBox.setMargin(contactNumberContainer, new Insets(0, 0, 20, 0));
+
+        // Job Profile field
+        ImageView profileIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResource("/com/example/jobseeker/profileIcon.png")).toExternalForm()));
+        profileIcon.setFitHeight(45);
+        profileIcon.setFitWidth(45);
+        profileIcon.setPreserveRatio(true);
+
+        TextField jobProfileField = new TextField();
+        jobProfileField.setPrefSize(424, 66);
+        jobProfileField.setPromptText("Enter your Job Profil");
+        jobProfileField.getStyleClass().add("application-text-field");
+        detailsContainer.setMargin(jobProfileField, new Insets(10, 0, 10, 0));
+
+
+        HBox jobProfileContainer = new HBox(15);
+        jobProfileContainer.setAlignment(Pos.CENTER_LEFT);
+        jobProfileContainer.getChildren().addAll(profileIcon, jobProfileField);
+        VBox.setMargin(jobProfileContainer, new Insets(0, 0, 30, 0));
+
+        // Upload buttons container
+        HBox uploadButtonsContainer = new HBox(20);
+        uploadButtonsContainer.setAlignment(Pos.CENTER);
+
+        // Upload CV button
+        ImageView uploadCVIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResource("/com/example/jobseeker/upload.png")).toExternalForm()));
+        uploadCVIcon.setFitHeight(24);
+        uploadCVIcon.setFitWidth(24);
+        uploadCVIcon.setPreserveRatio(true);
+
+        Button uploadCVButton = new Button("Upload CV", uploadCVIcon);
+        uploadCVButton.setPrefSize(187.61, 44);
+        uploadCVButton.getStyleClass().add("signIn-button");
+        uploadCVButton.setGraphicTextGap(10);
+        uploadCVButton.setContentDisplay(ContentDisplay.LEFT);
+        uploadCVButton.setOnAction(_ -> {
+            // Handle CV upload - to be implemented by you
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Select CV");
+            fileChooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
+            );
+            File file = fileChooser.showOpenDialog(detailsContainer.getScene().getWindow());
+            if (file != null) {
+                System.out.println("Selected CV: " + file.getAbsolutePath());
+                // Further processing to be implemented by you
+            }
+        });
+
+        // Upload Letter button
+        ImageView uploadLetterIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResource("/com/example/jobseeker/upload.png")).toExternalForm()));
+        uploadLetterIcon.setFitHeight(24);
+        uploadLetterIcon.setFitWidth(24);
+        uploadLetterIcon.setPreserveRatio(true);
+
+        Button uploadLetterButton = new Button("Upload Lettre", uploadLetterIcon);
+        uploadLetterButton.setPrefSize(187.61, 44);
+        uploadLetterButton.getStyleClass().add("signIn-button");
+        uploadLetterButton.setGraphicTextGap(10);
+        uploadLetterButton.setContentDisplay(ContentDisplay.LEFT);
+        uploadLetterButton.setOnAction(_ -> {
+            // Handle letter upload - to be implemented by you
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Select Cover Letter");
+            fileChooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
+            );
+            File file = fileChooser.showOpenDialog(detailsContainer.getScene().getWindow());
+            if (file != null) {
+                System.out.println("Selected Cover Letter: " + file.getAbsolutePath());
+                // Further processing to be implemented by you
+            }
+        });
+
+        uploadButtonsContainer.getChildren().addAll(uploadCVButton, uploadLetterButton);
+
+        Button submit = new Button("Submit");
+        submit.setPrefWidth(180);
+        submit.setPrefHeight(44);
+        submit.getStyleClass().add("details-button");
+        submit.onActionProperty().set(event -> {});
+
+        // Adding all components to the detailsContainer
+        detailsContainer.getChildren().addAll(
+                backButton_Title,
+                companyLabel,
+                locationLabel,
+                applicationTitleLabel,
+                contactNumberContainer,
+                jobProfileContainer,
+                uploadButtonsContainer
+        );
+    }
+
 
     protected VBox createJobCard(JobOffer offer) throws SQLException {
         if (offer == null) return null;
@@ -163,20 +324,9 @@ abstract class JobOffersList extends VBox {
         bookmarkIcon.setFitWidth(28);
         bookmarkIcon.setPreserveRatio(true);
 
-        Button save = new Button("", bookmarkIcon);
-        save.setPrefSize(60, 60);
-        save.setMinSize(60, 60);
-        save.setMaxSize(60, 60);
-        if (dashboard.getCurrentUser() != null) {
-            save.getStyleClass().add(viewModel.isSaved(dashboard.getCurrentUser().getId(), offer) ? "job-card-bookmark-saved" : "job-card-bookmark-unsaved");
-        }else{
-            save.getStyleClass().add("job-card-bookmark-unsaved");
-        }
 
-        save.setAlignment(Pos.CENTER);
 
-        HBox cardHeader = new HBox();
-        cardHeader.setAlignment(Pos.TOP_LEFT);
+
 
 
 
@@ -184,14 +334,34 @@ abstract class JobOffersList extends VBox {
         companyLabel.setFont(Font.font("Inter", FontWeight.LIGHT, 14));
         companyLabel.setTextFill(Color.web("#F1F1F1"));
 
+
         VBox title_company = new VBox(0);
         title_company.setAlignment(Pos.TOP_LEFT);
         title_company.setMaxHeight(50);
         title_company.getChildren().addAll(titleLabel, companyLabel);
+        HBox cardHeader = new HBox();
 
-        HBox.setHgrow(title_company, Priority.ALWAYS);
+        if(!dashboard.isUserInRole(Dashboard.UserRole.RECRUITER)){
 
-        cardHeader.getChildren().addAll(title_company, save);
+            cardHeader.setAlignment(Pos.TOP_LEFT);
+            HBox.setHgrow(title_company, Priority.ALWAYS);
+
+            Button save = new Button("", bookmarkIcon);
+            save.setPrefSize(60, 60);
+            save.setMinSize(60, 60);
+            save.setMaxSize(60, 60);
+            if (dashboard.getCurrentUser() != null) {
+                save.getStyleClass().add(viewModel.isSaved(dashboard.getCurrentUser().getId(), offer) ? "job-card-bookmark-saved" : "job-card-bookmark-unsaved");
+            }else{
+                save.getStyleClass().add("job-card-bookmark-unsaved");
+            }
+
+            save.setAlignment(Pos.CENTER);
+
+
+            cardHeader.getChildren().addAll(title_company, save);
+        }
+
 
         Label locationLabel = new Label(offer.getLocation().getCity());
         locationLabel.setFont(Font.font("Inter", FontWeight.LIGHT, 14));
@@ -214,7 +384,7 @@ abstract class JobOffersList extends VBox {
         Region region = new Region();
         VBox.setVgrow(region, Priority.ALWAYS);
 
-        card.getChildren().addAll(cardHeader, locationLabel, description,region, publishDate);
+        card.getChildren().addAll((dashboard.isUserInRole(Dashboard.UserRole.RECRUITER))? titleLabel : cardHeader, locationLabel, description,region, publishDate);
         card.setAlignment(Pos.TOP_LEFT);
         card.getStyleClass().add("job-card");
         card.setOnMouseClicked(_ -> {
@@ -261,21 +431,17 @@ abstract class JobOffersList extends VBox {
         locationLabel.getStyleClass().add("details-location");
         //locationLabel.setTextFill(Color.web("#f6f6f6"));
 
-        Button apply = new Button("Apply Now");
+        Button apply = new Button((dashboard.isUserInRole(Dashboard.UserRole.RECRUITER)) ? "View Submissions" : "Apply Now");
         apply.setPrefWidth(160);
         apply.setPrefHeight(44);
         apply.getStyleClass().add("details-button");
         apply.setOnAction(_ -> {
             try {
-                String url = "https://ma.indeed.com/jobs?q=&l=Maroc&from=searchOnDesktopSerp";
-                if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                    Desktop.getDesktop().browse(new URI(url));
-                } else {
-                    System.out.println("La navigation via le navigateur n'est pas supportée sur ce système.");
-                }
-            } catch (Exception e) {
-                System.out.println("Problem navigating to Indeed.com: " + e.getMessage());
+                updateJobDetailsForApplication();
+                } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
+
         });
 
         ImageView bookmark = new ImageView(new Image(Objects.requireNonNull(getClass().getResource("/com/example/jobseeker/whiteBookmark.png")).toExternalForm()));

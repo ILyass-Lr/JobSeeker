@@ -55,9 +55,9 @@ public class SignInView extends VBox {
         });
 
         signUpButton.setOnAction(event -> {
-                Dashboard.pages.put("Log in - Log out", Dashboard.signUpView);
+                Dashboard.pages.put("Sign up - Sign in", Dashboard.signUpView);
             try {
-                dashboard.switchPage("Log in - Log out");
+                dashboard.switchPage("Sign up - Sign in");
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
