@@ -3,6 +3,7 @@ package com.example.jobseeker.model;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -52,6 +53,14 @@ public class JobOffer {
     private String defaultIfNull(String input, String defaultValue) {
         return input == null ? defaultValue : input;
     }
+
+    public String formatDateTime() {
+        if (deadline.getHour() == 0 && deadline.getMinute() == 0 && deadline.getSecond() == 0) {
+            return deadline.toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        } else {
+            return deadline.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+        }
+    }
     private String formatRelativeDate(LocalDateTime dateTime) {
         if (dateTime == null) return "";
 
@@ -74,23 +83,6 @@ public class JobOffer {
         }
     }
 
-    // Factory method to create from database ResultSet
-//    public static JobOffer fromResultSet(ResultSet rs) throws SQLException {
-//        return new JobOffer(
-//                rs.getString("title"),
-//                rs.getString("company"),
-//                rs.getString("location"),
-//                rs.getString("contract_type"),
-//                rs.getString("description"),
-//                rs.getTimestamp("publish_date").toLocalDateTime(),
-//                rs.getString("salary"),
-//                rs.getString("requirements"),
-//                rs.getString("industry"),
-//                Boolean.parseBoolean(rs.getString("isSaved")),
-//                rs.getString("teleWork"),
-//                rs.getTimestamp("deadline").toLocalDateTime()
-//        );
-//    }
 
     // Getters and Setters
     public int getId() {

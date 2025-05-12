@@ -1,5 +1,8 @@
 package com.example.jobseeker.dao;
+import com.example.jobseeker.Dashboard;
 import com.example.jobseeker.model.*;
+import com.example.jobseeker.viewmodel.JobApplicationViewModel;
+import oracle.jdbc.proxy.annotation.Pre;
 
 
 import java.sql.Connection;
@@ -7,12 +10,30 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.HashMap;
+import java.util.Map;
 
 public class JobApplicationDAO {
     private Connection connection;
 
     public JobApplicationDAO(Connection conn) {
         this.connection = conn;
+    }
+
+
+    public Map<Integer, JobApplicationViewModel.AppSub> loadSubmmittedApplications(int userId) throws SQLException {
+        Map<Integer, JobApplicationViewModel.AppSub> submmittedApplications = new HashMap<Integer, JobApplicationViewModel.AppSub>();
+        String sql = "SELECT JOB_ID, STATUS from APPLICATIONS WHERE CANDIDATE_ID = ?";
+        try(PreparedStatement stmt = connection.prepareStatement(sql)){
+            stmt.setInt(1, userId);
+            try (ResultSet resultSet = stmt.executeQuery()) {
+                while (resultSet.next()) {
+                    submmittedApplications.put(resultSet.getInt("JOB_ID"), JobApplicationViewModel.AppSub.valueOf(resultSet.getString("STATUS")));
+                }
+            }
+        }
+
+        return submmittedApplications;
     }
 
     public boolean insertJobApplication(int userId, int jobOfferId, JobApplication jobApplication) {

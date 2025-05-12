@@ -3,6 +3,7 @@ module com.example.jobseeker {
     requires javafx.fxml;
     requires java.sql;
     requires java.desktop;
+    requires com.oracle.database.jdbc;
 
 
     opens com.example.jobseeker to javafx.fxml;

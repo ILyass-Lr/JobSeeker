@@ -32,13 +32,13 @@ public class JobOffersPage extends JobOffersList {
     private ComboBox<String> locationFilter;
     private ComboBox<String> teleworkFilter;
     private TextField searchField;
-    private JobApplicationViewModel appViewModel;
+
     //private ObservableList<JobOffer> jobOffers;
 
 
     public JobOffersPage(Dashboard dashboard, JobOfferViewModel jobOfferViewModel, JobApplicationViewModel jobApplicationViewModel) throws SQLException {
-        super("No job offers found matching your criteria.", jobOfferViewModel, dashboard);
-        this.appViewModel = jobApplicationViewModel;
+        super("No job offers found matching your criteria.", jobOfferViewModel, dashboard, jobApplicationViewModel);
+
     }
     @Override
     protected void initializeData() throws SQLException {

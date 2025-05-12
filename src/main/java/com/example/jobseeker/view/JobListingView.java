@@ -23,13 +23,13 @@ import java.util.Objects;
 
 
 public class JobListingView extends JobOffersList {
-    private JobApplicationViewModel appViewModel;
+
 
     private List<JobOffer> filteredOffers;
     public JobListingView(Dashboard dashboard, JobOfferViewModel jobOfferViewModel, JobApplicationViewModel jobApplicationViewModel) throws SQLException {
-        super("You haven't saved any job offers yet.", jobOfferViewModel, dashboard);
+        super("Your Company doesn't have any job Posts yet!.", jobOfferViewModel, dashboard, jobApplicationViewModel);
         refreshBookmarkedJobs();
-        this.appViewModel = jobApplicationViewModel;
+
     }
 
     @Override
@@ -127,6 +127,13 @@ public class JobListingView extends JobOffersList {
 
     @Override
     public  void updateJobDetailsForApplication() throws SQLException {
+        Label errorMessageLabel = new Label();
+        errorMessageLabel.setTextFill(Color.RED);
+        errorMessageLabel.setPrefHeight(30);
+        errorMessageLabel.setFont(Font.font("Inter", 20));
+        errorMessageLabel.setAlignment(Pos.CENTER);
+
+
         if (viewModel.getSelectedJobOffer() == null) return;
 
         detailsContainer.getChildren().clear();

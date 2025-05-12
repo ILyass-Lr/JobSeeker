@@ -53,6 +53,23 @@ public class UserDAO {
          }
      }
 
+     public boolean insertUserDetails(String contact, String jobProfile, int userId) throws SQLException{
+         String sql = "UPDATE APP_USERS SET CONTACT_NUMBER = ? , JOB_PROFILE = ? WHERE ID = ?";
+         try (CallableStatement stmt = connection.prepareCall(sql)) {
+             stmt.setString(1, contact);
+             stmt.setString(2, jobProfile);
+             stmt.setInt(3, userId);
+
+             stmt.execute();
+             return true;
+
+
+         } catch (SQLException e) {
+             System.err.println("Error updating user details: " + e.getMessage());
+            return false;
+         }
+    }
+
 
 
     // Find a user by email and password for authentication

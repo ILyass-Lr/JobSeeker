@@ -2,6 +2,7 @@ package com.example.jobseeker.view;
 
 import com.example.jobseeker.Dashboard;
 import com.example.jobseeker.model.JobOffer;
+import com.example.jobseeker.viewmodel.JobApplicationViewModel;
 import com.example.jobseeker.viewmodel.JobOfferViewModel;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -20,6 +21,7 @@ import java.awt.Desktop;
 import java.io.File;
 import java.net.URI;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
@@ -37,8 +39,14 @@ abstract class JobOffersList extends VBox {
     protected HBox pagination;
     protected Dashboard dashboard;
     protected JobOfferViewModel viewModel;
-    protected JobOffersList(String message, JobOfferViewModel jobOfferViewModel, Dashboard dashboard) throws SQLException {
+    protected JobApplicationViewModel jobApplicationViewModel;
+    protected JobOffersList(String message, JobOfferViewModel jobOfferViewModel, Dashboard dashboard, JobApplicationViewModel jobApplicationViewModel) throws SQLException {
         this.dashboard = dashboard;
+        this.jobApplicationViewModel = jobApplicationViewModel;
+        if (dashboard.isUserInRole(Dashboard.UserRole.CANDIDATE)){
+            System.out.println("Is candidate : YES");
+            jobApplicationViewModel.loadSubmissions(dashboard.getCurrentUser().getId());
+        }
         this.viewModel = jobOfferViewModel;
         pagination = new HBox(10);
         setAlignment(Pos.TOP_CENTER);
@@ -157,7 +165,7 @@ abstract class JobOffersList extends VBox {
         backButton.setPrefSize(45, 45);
         backButton.getStyleClass().add("back-button");
 
-        // Use a placeholder for the back icon - you'll need to replace with your icon
+        // Use a placeholder for the back icon
         ImageView backIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResource("/com/example/jobseeker/Back.png")).toExternalForm()));
         backIcon.setFitHeight(24);
         backIcon.setFitWidth(24);
@@ -190,8 +198,8 @@ abstract class JobOffersList extends VBox {
 
         // Job Application title
         Label applicationTitleLabel = new Label("Job Application:");
-        applicationTitleLabel.setFont(Font.font("Inter", FontWeight.BOLD, 28));
         applicationTitleLabel.setTextFill(Color.web("#44AAFE"));
+        applicationTitleLabel.setFont(Font.font("Inter", FontWeight.BOLD, 28));
         applicationTitleLabel.setUnderline(true);
         VBox.setMargin(applicationTitleLabel, new Insets(20, 0, 30, 0));
 
@@ -220,10 +228,9 @@ abstract class JobOffersList extends VBox {
 
         TextField jobProfileField = new TextField();
         jobProfileField.setPrefSize(424, 66);
-        jobProfileField.setPromptText("Enter your Job Profil");
+        jobProfileField.setPromptText("Enter your Job Profile");
         jobProfileField.getStyleClass().add("application-text-field");
         detailsContainer.setMargin(jobProfileField, new Insets(10, 0, 10, 0));
-
 
         HBox jobProfileContainer = new HBox(15);
         jobProfileContainer.setAlignment(Pos.CENTER_LEFT);
@@ -234,28 +241,39 @@ abstract class JobOffersList extends VBox {
         HBox uploadButtonsContainer = new HBox(20);
         uploadButtonsContainer.setAlignment(Pos.CENTER);
 
+        // File status labels
+        Label cvStatusLabel = new Label("No CV selected");
+        cvStatusLabel.setTextFill(Color.GRAY);
+
+        Label coverLetterStatusLabel = new Label("No Cover Letter selected");
+        coverLetterStatusLabel.setTextFill(Color.GRAY);
+
+        // References for selected files
+        final File[] selectedCVFile = {null};
+        final File[] selectedCoverLetterFile = {null};
+
         // Upload CV button
         ImageView uploadCVIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResource("/com/example/jobseeker/upload.png")).toExternalForm()));
         uploadCVIcon.setFitHeight(24);
         uploadCVIcon.setFitWidth(24);
         uploadCVIcon.setPreserveRatio(true);
 
-        Button uploadCVButton = new Button("Upload CV", uploadCVIcon);
+        Button uploadCVButton = new Button("CV", uploadCVIcon);
         uploadCVButton.setPrefSize(187.61, 44);
         uploadCVButton.getStyleClass().add("signIn-button");
         uploadCVButton.setGraphicTextGap(10);
         uploadCVButton.setContentDisplay(ContentDisplay.LEFT);
         uploadCVButton.setOnAction(_ -> {
-            // Handle CV upload - to be implemented by you
             FileChooser fileChooser = new FileChooser();
-            fileChooser.setTitle("Select CV");
+            fileChooser.setTitle("  Select CV");
             fileChooser.getExtensionFilters().add(
                     new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
             );
             File file = fileChooser.showOpenDialog(detailsContainer.getScene().getWindow());
             if (file != null) {
-                System.out.println("Selected CV: " + file.getAbsolutePath());
-                // Further processing to be implemented by you
+                selectedCVFile[0] = file;
+                cvStatusLabel.setText(file.getName());
+                cvStatusLabel.setTextFill(Color.GREEN);
             }
         });
 
@@ -265,13 +283,12 @@ abstract class JobOffersList extends VBox {
         uploadLetterIcon.setFitWidth(24);
         uploadLetterIcon.setPreserveRatio(true);
 
-        Button uploadLetterButton = new Button("Upload Lettre", uploadLetterIcon);
+        Button uploadLetterButton = new Button("Letter", uploadLetterIcon);
         uploadLetterButton.setPrefSize(187.61, 44);
         uploadLetterButton.getStyleClass().add("signIn-button");
         uploadLetterButton.setGraphicTextGap(10);
         uploadLetterButton.setContentDisplay(ContentDisplay.LEFT);
         uploadLetterButton.setOnAction(_ -> {
-            // Handle letter upload - to be implemented by you
             FileChooser fileChooser = new FileChooser();
             fileChooser.setTitle("Select Cover Letter");
             fileChooser.getExtensionFilters().add(
@@ -279,18 +296,94 @@ abstract class JobOffersList extends VBox {
             );
             File file = fileChooser.showOpenDialog(detailsContainer.getScene().getWindow());
             if (file != null) {
-                System.out.println("Selected Cover Letter: " + file.getAbsolutePath());
-                // Further processing to be implemented by you
+                selectedCoverLetterFile[0] = file;
+                coverLetterStatusLabel.setText(file.getName());
+                coverLetterStatusLabel.setTextFill(Color.GREEN);
             }
         });
 
-        uploadButtonsContainer.getChildren().addAll(uploadCVButton, uploadLetterButton);
+        VBox cV = new VBox(5);
+        cV.setAlignment(Pos.CENTER);
+        cV.getChildren().addAll(uploadCVButton, cvStatusLabel);
 
-        Button submit = new Button("Submit");
-        submit.setPrefWidth(180);
-        submit.setPrefHeight(44);
-        submit.getStyleClass().add("details-button");
-        submit.onActionProperty().set(event -> {});
+        VBox covLet = new VBox(5);
+        covLet.setAlignment(Pos.CENTER);
+        covLet.getChildren().addAll(uploadLetterButton, coverLetterStatusLabel);
+
+        uploadButtonsContainer.getChildren().addAll(cV, covLet);
+
+
+        Label errorMessageLabel = new Label();
+        errorMessageLabel.setTextFill(Color.RED);
+        errorMessageLabel.setPrefHeight(30);
+        errorMessageLabel.setFont(Font.font("Inter", 20));
+        errorMessageLabel.setAlignment(Pos.CENTER);
+        VBox.setMargin(errorMessageLabel, new Insets(12, 0, 12, 0));
+
+        // Success message
+        Label successMessageLabel = new Label();
+        successMessageLabel.setTextFill(Color.GREEN);
+        successMessageLabel.setPrefHeight(30);
+        successMessageLabel.setFont(Font.font("Inter", 20));
+        successMessageLabel.setAlignment(Pos.CENTER);
+        VBox.setMargin(successMessageLabel, new Insets(12, 0, 12, 0));
+
+        Button submitButton = new Button("Submit");
+        submitButton.setPrefWidth(180);
+        submitButton.setPrefHeight(44);
+        submitButton.getStyleClass().add("details-button");
+        submitButton.setOnAction(event -> {
+            // Clear previous messages
+            errorMessageLabel.setText("");
+            successMessageLabel.setText("");
+
+            // Get the current user ID and job offer ID
+            int userId = dashboard.getCurrentUser().getId();
+            int jobOfferId = viewModel.getSelectedJobOffer().getId(); // Assuming this exists
+
+            // Get input values
+            String contactNumber = contactNumberField.getText();
+            String jobProfile = jobProfileField.getText();
+
+            // Submit the application
+            boolean success = jobApplicationViewModel.submitJobApplication(
+                    userId,
+                    jobOfferId,
+                    contactNumber,
+                    jobProfile,
+                    selectedCVFile[0],
+                    selectedCoverLetterFile[0]
+            );
+
+            if (success) {
+                successMessageLabel.setText("Application submitted successfully!");
+
+                // Reset fields
+                contactNumberField.clear();
+                jobProfileField.clear();
+                selectedCVFile[0] = null;
+                selectedCoverLetterFile[0] = null;
+                cvStatusLabel.setText("No CV selected");
+                cvStatusLabel.setTextFill(Color.GRAY);
+                coverLetterStatusLabel.setText("No Cover Letter selected");
+                coverLetterStatusLabel.setTextFill(Color.GRAY);
+                try {
+
+                    updateJobDetails();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        });
+
+        HBox sub = new HBox();
+        sub.setAlignment(Pos.CENTER_LEFT);
+        Label lastDate = new Label("DeadLine: " + viewModel.getSelectedJobOffer().formatDateTime());
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        sub.getChildren().addAll(submitButton,spacer, lastDate);
+        Region spacer2 = new Region();
+        VBox.setVgrow(spacer2, Priority.ALWAYS);
 
         // Adding all components to the detailsContainer
         detailsContainer.getChildren().addAll(
@@ -300,8 +393,25 @@ abstract class JobOffersList extends VBox {
                 applicationTitleLabel,
                 contactNumberContainer,
                 jobProfileContainer,
-                uploadButtonsContainer
+                uploadButtonsContainer,
+                errorMessageLabel,
+              //  successMessageLabel,
+                spacer2,
+                sub
         );
+
+        // Bind properties
+        jobApplicationViewModel.contactNumberProperty().bindBidirectional(contactNumberField.textProperty());
+        jobApplicationViewModel.jobProfileProperty().bindBidirectional(jobProfileField.textProperty());
+
+        // Error message listener
+        jobApplicationViewModel.errorMessageProperty().addListener((observable, oldValue, newValue) -> {
+            errorMessageLabel.setText(newValue);
+            if (!newValue.isEmpty()) {
+                errorMessageLabel.setTextFill(Color.RED);
+                successMessageLabel.setText("");
+            }
+        });
     }
 
 
@@ -416,7 +526,7 @@ abstract class JobOffersList extends VBox {
         updateJobDetails();
     }
     protected void updateJobDetails() throws SQLException {
-
+        if(dashboard.isUserInRole(Dashboard.UserRole.CANDIDATE)) jobApplicationViewModel.loadSubmissions(dashboard.getCurrentUser().getId());
         if (viewModel.getSelectedJobOffer() == null) return;
 
         detailsContainer.getChildren().clear();
@@ -430,11 +540,22 @@ abstract class JobOffersList extends VBox {
         Label locationLabel = new Label(viewModel.getSelectedJobOffer().getLocation().getCity());
         locationLabel.getStyleClass().add("details-location");
         //locationLabel.setTextFill(Color.web("#f6f6f6"));
+        JobApplicationViewModel.AppSub status = null;
 
-        Button apply = new Button((dashboard.isUserInRole(Dashboard.UserRole.RECRUITER)) ? "View Submissions" : "Apply Now");
+        if(dashboard.isUserInRole(Dashboard.UserRole.CANDIDATE)){
+            status = jobApplicationViewModel.getSubmmittedApplications().get(viewModel.getSelectedJobOffer().getId());
+        }
+
+        Button apply = new Button((dashboard.isUserInRole(Dashboard.UserRole.RECRUITER)) ? "View Submissions" : status == null ? "Apply Now" : String.valueOf(status));
         apply.setPrefWidth(160);
         apply.setPrefHeight(44);
-        apply.getStyleClass().add("details-button");
+        apply.setDisable(dashboard.isUserInRole(Dashboard.UserRole.NONE) || viewModel.getSelectedJobOffer().getDeadline().isBefore(LocalDateTime.now()));
+        switch (status) {
+            case JobApplicationViewModel.AppSub.APPROVED -> apply.getStyleClass().add("details-button-green");
+            case JobApplicationViewModel.AppSub.REJECTED -> apply.getStyleClass().add("details-button-red");
+            case null -> apply.getStyleClass().add("details-button");
+            default -> apply.getStyleClass().add("details-button");
+        }
         apply.setOnAction(_ -> {
             try {
                 updateJobDetailsForApplication();

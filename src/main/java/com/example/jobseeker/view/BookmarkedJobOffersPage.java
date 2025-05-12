@@ -2,6 +2,7 @@ package com.example.jobseeker.view;
 import com.example.jobseeker.Dashboard;
 import com.example.jobseeker.model.JobOffer;
 
+import com.example.jobseeker.viewmodel.JobApplicationViewModel;
 import com.example.jobseeker.viewmodel.JobOfferViewModel;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -18,8 +19,8 @@ import java.util.List;
 public class BookmarkedJobOffersPage extends JobOffersList {
 
     private List<JobOffer> filteredOffers;
-    public BookmarkedJobOffersPage(Dashboard dashboard, JobOfferViewModel jobOfferViewModel) throws SQLException {
-        super("You haven't saved any job offers yet.", jobOfferViewModel, dashboard);
+    public BookmarkedJobOffersPage(Dashboard dashboard, JobOfferViewModel jobOfferViewModel, JobApplicationViewModel jobApplicationViewModel) throws SQLException {
+        super("You haven't saved any job offers yet.", jobOfferViewModel, dashboard, jobApplicationViewModel);
         refreshBookmarkedJobs();
     }
 

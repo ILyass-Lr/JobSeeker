@@ -70,7 +70,7 @@ public class Dashboard extends Application {
         JobOfferViewModel jobOfferViewModel = new JobOfferViewModel(jobOfferDAO);
         SignUpViewModel signUpViewModel = new SignUpViewModel(userDAO);
         SignInViewModel signInViewModel = new SignInViewModel(userDAO);
-        JobApplicationViewModel applicationViewModel = new JobApplicationViewModel(jobApplicationDAO);
+        JobApplicationViewModel applicationViewModel = new JobApplicationViewModel(jobApplicationDAO, userDAO);
 
 
         jobOfferViewModel.loadJobOffers();
@@ -127,7 +127,7 @@ public class Dashboard extends Application {
         pages.put("Companies", new CompaniesPage(this, companyViewModel));
         pages.put("Job Offers", jobOffersPage);
         pages.put("Statistics", new StatisticsPage(this, jobOfferViewModel));
-        pages.put("Saved Job Offers", new BookmarkedJobOffersPage(this, jobOfferViewModel));
+        pages.put("Saved Job Offers", new BookmarkedJobOffersPage(this, jobOfferViewModel, applicationViewModel));
 
         // Recruiter specific pages
         pages.put("Create Job Offer", new CreateJobOfferView(this));
@@ -198,6 +198,7 @@ public class Dashboard extends Application {
             currentRole = UserRole.NONE;
         } else {
             // Set role based on user type
+
             currentRole = user.getRole().equalsIgnoreCase("RECRUITER") ? UserRole.RECRUITER : UserRole.CANDIDATE;
         }
 
@@ -480,7 +481,7 @@ public class Dashboard extends Application {
     public void toggleBookmark(JobOffer jobOffer, int source) throws SQLException {
         try {
             // Update the JobOffersPage if we're coming from there
-            if (source == 1) {
+            if (source == 2) {
                 jobOffersPage.updateUIAfterFiltering();
             }
 
