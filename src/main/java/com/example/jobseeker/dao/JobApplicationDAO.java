@@ -10,7 +10,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class JobApplicationDAO {
@@ -111,10 +113,26 @@ public class JobApplicationDAO {
             stmt.setInt(2, applicationId);
 
             int affectedRows = stmt.executeUpdate();
+            System.out.println("Updating application :" + affectedRows);
             return affectedRows > 0;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
+        }
+    }
+    public List<JobApplication> getApplications(int jobOfferId) {
+        List<JobApplication> applications = new ArrayList<JobApplication>();
+        String sql = "SELECT * FROM Applications WHERE JOB_ID = ?";
+        try(PreparedStatement stmt = connection.prepareStatement(sql)){
+            stmt.setInt(1, jobOfferId);
+            try (ResultSet resultSet = stmt.executeQuery()) {
+                while (resultSet.next()) {
+                    applications.add(mapResultSetToApplication(resultSet));
+                }
+            }
+            return applications;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -132,7 +150,9 @@ public class JobApplicationDAO {
                 rs.getBytes("cover_letter_file"),
                 rs.getString("cover_letter_filename"),
                 rs.getString("cover_letter_filetype"),
-                rs.getString("status")
+                rs.getString("status"),
+                rs.getInt("CANDIDATE_ID"),
+                rs.getInt("ID")
         );
     }
 }

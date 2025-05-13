@@ -4,6 +4,7 @@ import com.example.jobseeker.Dashboard;
 import com.example.jobseeker.model.JobOffer;
 import com.example.jobseeker.viewmodel.JobApplicationViewModel;
 import com.example.jobseeker.viewmodel.JobOfferViewModel;
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -16,6 +17,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
+import javafx.util.Duration;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -23,10 +25,9 @@ import java.net.URI;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
-abstract class JobOffersList extends VBox {
+public abstract class JobOffersList extends VBox {
     protected final int ITEMS_PER_PAGE = 15;
     protected int currentPage = 1;
     //protected List<JobOffer> filteredOffers;
@@ -43,10 +44,7 @@ abstract class JobOffersList extends VBox {
     protected JobOffersList(String message, JobOfferViewModel jobOfferViewModel, Dashboard dashboard, JobApplicationViewModel jobApplicationViewModel) throws SQLException {
         this.dashboard = dashboard;
         this.jobApplicationViewModel = jobApplicationViewModel;
-        if (dashboard.isUserInRole(Dashboard.UserRole.CANDIDATE)){
-            System.out.println("Is candidate : YES");
-            jobApplicationViewModel.loadSubmissions(dashboard.getCurrentUser().getId());
-        }
+
         this.viewModel = jobOfferViewModel;
         pagination = new HBox(10);
         setAlignment(Pos.TOP_CENTER);
@@ -58,7 +56,7 @@ abstract class JobOffersList extends VBox {
         viewModel.loadJobOffers();
         initializeData();
         listingContainer = createJobListingsSection();
-        detailsContainer = new VBox();
+        detailsContainer = new VBox(5);
         detailsContainer.setPadding(new Insets(32, 30, 34, 32));
         detailsContainer.setPrefWidth(590);
         detailsContainer.setBackground(new Background(new BackgroundFill(Color.web("#252C48"),new CornerRadii(15), Insets.EMPTY)));
@@ -85,6 +83,12 @@ abstract class JobOffersList extends VBox {
                 showNoJobOffersMessage(message);
             }
         });
+    }
+    public void loadData() throws SQLException {
+        if (dashboard.isUserInRole(Dashboard.UserRole.CANDIDATE)){
+            System.out.println("Is candidate : YES");
+            jobApplicationViewModel.loadSubmissions(dashboard.getCurrentUser().getId());
+        }
     }
     protected abstract void initializeData() throws SQLException;
     protected abstract void initialize() throws SQLException;
@@ -198,10 +202,7 @@ abstract class JobOffersList extends VBox {
 
         // Job Application title
         Label applicationTitleLabel = new Label("Job Application:");
-        applicationTitleLabel.setTextFill(Color.web("#44AAFE"));
-        applicationTitleLabel.setFont(Font.font("Inter", FontWeight.BOLD, 28));
-        applicationTitleLabel.setUnderline(true);
-        VBox.setMargin(applicationTitleLabel, new Insets(20, 0, 30, 0));
+        applicationTitleLabel.getStyleClass().add("application-title-label");
 
         // Contact Number field
         ImageView phoneIcon = new ImageView(new Image(Objects.requireNonNull(getClass().getResource("/com/example/jobseeker/phoneNumber.png")).toExternalForm()));
@@ -335,7 +336,7 @@ abstract class JobOffersList extends VBox {
         submitButton.setOnAction(event -> {
             // Clear previous messages
             errorMessageLabel.setText("");
-            successMessageLabel.setText("");
+            //successMessageLabel.setText("");
 
             // Get the current user ID and job offer ID
             int userId = dashboard.getCurrentUser().getId();
@@ -356,23 +357,39 @@ abstract class JobOffersList extends VBox {
             );
 
             if (success) {
-                successMessageLabel.setText("Application submitted successfully!");
 
-                // Reset fields
-                contactNumberField.clear();
-                jobProfileField.clear();
-                selectedCVFile[0] = null;
-                selectedCoverLetterFile[0] = null;
-                cvStatusLabel.setText("No CV selected");
-                cvStatusLabel.setTextFill(Color.GRAY);
-                coverLetterStatusLabel.setText("No Cover Letter selected");
-                coverLetterStatusLabel.setTextFill(Color.GRAY);
-                try {
+                    System.out.println("In");
+                    successMessageLabel.setText("Application submitted successfully!");
 
-                    updateJobDetails();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
+                    // Reset fields
+                    contactNumberField.clear();
+                    jobProfileField.clear();
+                    selectedCVFile[0] = null;
+                    selectedCoverLetterFile[0] = null;
+                    cvStatusLabel.setText("No CV selected");
+                    cvStatusLabel.setTextFill(Color.GRAY);
+                    coverLetterStatusLabel.setText("No Cover Letter selected");
+                    coverLetterStatusLabel.setTextFill(Color.GRAY);
+
+                    jobApplicationViewModel.getSubmmittedApplications().put(viewModel.getSelectedJobOffer().getId(), JobApplicationViewModel.AppSub.SUBMITTED);
+                javafx.application.Platform.runLater(() -> {
+                    try {
+                        // Add a small delay if needed
+                        PauseTransition delay = new PauseTransition(Duration.millis(645));
+                        delay.setOnFinished(evt -> {
+                            try {
+                                updateJobDetails();
+                            } catch (SQLException e) {
+                                throw new RuntimeException(e);
+                            }
+                        });
+                        delay.play();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                });
+
+
             }
         });
 
@@ -395,7 +412,7 @@ abstract class JobOffersList extends VBox {
                 jobProfileContainer,
                 uploadButtonsContainer,
                 errorMessageLabel,
-              //  successMessageLabel,
+                successMessageLabel,
                 spacer2,
                 sub
         );
@@ -526,10 +543,12 @@ abstract class JobOffersList extends VBox {
         updateJobDetails();
     }
     protected void updateJobDetails() throws SQLException {
-        if(dashboard.isUserInRole(Dashboard.UserRole.CANDIDATE)) jobApplicationViewModel.loadSubmissions(dashboard.getCurrentUser().getId());
+
         if (viewModel.getSelectedJobOffer() == null) return;
 
+
         detailsContainer.getChildren().clear();
+
 
         Label titleLabel = new Label(viewModel.getSelectedJobOffer().getTitle());
         titleLabel.getStyleClass().add("details-title");
@@ -546,10 +565,10 @@ abstract class JobOffersList extends VBox {
             status = jobApplicationViewModel.getSubmmittedApplications().get(viewModel.getSelectedJobOffer().getId());
         }
 
-        Button apply = new Button((dashboard.isUserInRole(Dashboard.UserRole.RECRUITER)) ? "View Submissions" : status == null ? "Apply Now" : String.valueOf(status));
+        Button apply = new Button((dashboard.isUserInRole(Dashboard.UserRole.RECRUITER)) ? "Submissions" : status == null ? "Apply Now" : String.valueOf(status));
         apply.setPrefWidth(160);
         apply.setPrefHeight(44);
-        apply.setDisable(dashboard.isUserInRole(Dashboard.UserRole.NONE) || viewModel.getSelectedJobOffer().getDeadline().isBefore(LocalDateTime.now()));
+        apply.setDisable((dashboard.isUserInRole(Dashboard.UserRole.CANDIDATE) && (viewModel.getSelectedJobOffer().getDeadline().isBefore(LocalDateTime.now()) || status != null)) || dashboard.isUserInRole(Dashboard.UserRole.NONE));
         switch (status) {
             case JobApplicationViewModel.AppSub.APPROVED -> apply.getStyleClass().add("details-button-green");
             case JobApplicationViewModel.AppSub.REJECTED -> apply.getStyleClass().add("details-button-red");
@@ -564,35 +583,40 @@ abstract class JobOffersList extends VBox {
             }
 
         });
+        HBox buttons = null;
+        Button save;
+        if(dashboard.isUserInRole(Dashboard.UserRole.CANDIDATE)){
+            ImageView bookmark = new ImageView(new Image(Objects.requireNonNull(getClass().getResource("/com/example/jobseeker/whiteBookmark.png")).toExternalForm()));
+            bookmark.setFitHeight(28);
+            bookmark.setFitWidth(28);
+            bookmark.setPreserveRatio(true);
 
-        ImageView bookmark = new ImageView(new Image(Objects.requireNonNull(getClass().getResource("/com/example/jobseeker/whiteBookmark.png")).toExternalForm()));
-        bookmark.setFitHeight(28);
-        bookmark.setFitWidth(28);
-        bookmark.setPreserveRatio(true);
+            save = new Button("", bookmark);
+            save.setPrefWidth(44);
+            save.setPrefHeight(44);
+            save.setAlignment(Pos.CENTER);
+            if (dashboard.getCurrentUser() != null) {
+                save.getStyleClass().add(viewModel.isSaved(dashboard.getCurrentUser().getId(), viewModel.getSelectedJobOffer()) ? "details-button-bookmark-saved" : "details-button-bookmark-unsaved");
+            }else{
+                save.getStyleClass().add("details-button-bookmark-unsaved");
+                save.setDisable(true);
+                save.setTooltip(new Tooltip("You need to create an account"));
+            }
 
-        Button save = new Button("", bookmark);
-        save.setPrefWidth(44);
-        save.setPrefHeight(44);
-        save.setAlignment(Pos.CENTER);
-        if (dashboard.getCurrentUser() != null) {
-            save.getStyleClass().add(viewModel.isSaved(dashboard.getCurrentUser().getId(), viewModel.getSelectedJobOffer()) ? "details-button-bookmark-saved" : "details-button-bookmark-unsaved");
-        }else{
-            save.getStyleClass().add("details-button-bookmark-unsaved");
-            save.setDisable(true);
-            save.setTooltip(new Tooltip("You need to create an account"));
+            save.setBackground(new Background(new BackgroundFill(Color.web("#CA5656"), new CornerRadii(10), Insets.EMPTY)));
+            save.setOnAction(_ -> {
+                try {
+                    handleSaveButton(save, (Button)((HBox)selectedCard.getChildren().getFirst()).getChildren().getLast());
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            buttons = new HBox(25);
+            buttons.getChildren().addAll(apply, save);
+            VBox.setMargin(buttons, new Insets(0, 0, 22, 0));
         }
 
-        save.setBackground(new Background(new BackgroundFill(Color.web("#CA5656"), new CornerRadii(10), Insets.EMPTY)));
-        save.setOnAction(_ -> {
-            try {
-                handleSaveButton(save, (Button)((HBox)selectedCard.getChildren().getFirst()).getChildren().getLast());
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
 
-        HBox buttons = new HBox(25);
-        buttons.getChildren().addAll(apply, save);
 
         // Job Details Content
         // First Section
@@ -830,13 +854,13 @@ abstract class JobOffersList extends VBox {
 
 
         VBox.setMargin(locationLabel, new Insets(0, 0, 22, 0));
-        VBox.setMargin(buttons, new Insets(0, 0, 22, 0));
+
 
         detailsContainer.getChildren().addAll(
                 titleLabel,
                 companyLabel,
                 locationLabel,
-                buttons,
+                dashboard.isUserInRole(Dashboard.UserRole.CANDIDATE) ? buttons : apply,
                 jobDetails,
                 Place,
                 Education,

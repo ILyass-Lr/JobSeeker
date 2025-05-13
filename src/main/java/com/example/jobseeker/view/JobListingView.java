@@ -1,5 +1,6 @@
 package com.example.jobseeker.view;
 import com.example.jobseeker.Dashboard;
+import com.example.jobseeker.model.JobApplication;
 import com.example.jobseeker.model.JobOffer;
 
 import com.example.jobseeker.viewmodel.JobApplicationViewModel;
@@ -7,6 +8,8 @@ import com.example.jobseeker.viewmodel.JobOfferViewModel;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
@@ -15,7 +18,12 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,6 +44,7 @@ public class JobListingView extends JobOffersList {
     protected void initializeData() throws SQLException {
         // Initially get saved job offers
         if (dashboard.getCurrentUser() != null){
+            System.out.println("USER IS RECRUITER");
             viewModel.searchJobOffersByRecruiter(dashboard.getCurrentUser().getId());
             filteredOffers = viewModel.getJobOffers();
         }else{
@@ -45,7 +54,8 @@ public class JobListingView extends JobOffersList {
     }
 
     @Override
-    protected void initialize() throws SQLException {
+    public void initialize() throws SQLException {
+        //System.out.println("This is a JobListingView");
         initializeData();
         HBox mainContent = new HBox(14, listingContainer, detailsContainer);
         mainContent.setAlignment(Pos.TOP_CENTER);
@@ -73,21 +83,21 @@ public class JobListingView extends JobOffersList {
 
             listingVBox.getChildren().clear();
 
-            if (viewModel.getSavedJobOffers() == null || viewModel.getSavedJobOffers().isEmpty()) {
+            if (viewModel.getJobOffers() == null || viewModel.getJobOffers().isEmpty()) {
 
                 showNoJobOffersMessage(message);
                 return;
             }
             int startIdx = (currentPage - 1) * ITEMS_PER_PAGE;
-            int endIdx = Math.min(startIdx + ITEMS_PER_PAGE, viewModel.getSavedJobOffers().size());
-            if (startIdx >= viewModel.getSavedJobOffers().size()) {
+            int endIdx = Math.min(startIdx + ITEMS_PER_PAGE, viewModel.getJobOffers().size());
+            if (startIdx >= viewModel.getJobOffers().size()) {
                 currentPage = 1;
                 startIdx = 0;
-                endIdx = Math.min(ITEMS_PER_PAGE, viewModel.getSavedJobOffers().size());
+                endIdx = Math.min(ITEMS_PER_PAGE, viewModel.getJobOffers().size());
                 updatePaginationControls();
             }
             for (int i = startIdx; i < endIdx; i++) {
-                JobOffer offer = viewModel.getSavedJobOffers().get(i);
+                JobOffer offer = viewModel.getJobOffers().get(i);
                 VBox jobCard = null;
                 try {
                     jobCard = createJobCard(offer);
@@ -177,21 +187,170 @@ public class JobListingView extends JobOffersList {
 
         // Job SUBMISSIONS title
         Label applicationTitleLabel = new Label("Job Submissions:");
-        applicationTitleLabel.setFont(Font.font("Inter", FontWeight.BOLD, 28));
-        applicationTitleLabel.setTextFill(Color.web("#44AAFE"));
-        applicationTitleLabel.setUnderline(true);
-        VBox.setMargin(applicationTitleLabel, new Insets(20, 0, 30, 0));
+        applicationTitleLabel.getStyleClass().add("application-title-label");
 
-        // SUBMISSION
-//        for (JobApplication jobApplication: viewModel.submisison ) {
-//             LAYOUT.getChildren().add(  createSubmssionCard(JobApplication jobApplication)
-//        }
+
+        detailsContainer.getChildren().addAll(
+                backButton_Title,
+                companyLabel,
+                locationLabel,
+                applicationTitleLabel);
+        for(JobApplication jobApplication : jobApplicationViewModel.getApplications(viewModel.getSelectedJobOffer().getId())){
+            detailsContainer.getChildren().add(createApplicationCard(jobApplicationViewModel.getUserEmail(jobApplication.getCandidateId()), jobApplication));
         }
 
+        }
+
+
+    public VBox createApplicationCard(String email, JobApplication jobApplication) {
+        VBox card = new VBox(15);
+        card.setPrefSize(506, 219);
+        card.setPadding(new Insets(20));
+        card.setAlignment(Pos.CENTER);
+        card.setStyle("-fx-background-radius: 15; -fx-background-color: linear-gradient(to bottom right, #c67ff3, #9b64f3);");
+
+        // Full Name and Email
+//        HBox infoBox = new HBox(40);
+//        VBox nameBox = new VBox(4);
+//        Label nameLabel = new Label("Full Name:");
+//        nameLabel.setFont(Font.font("Inter", FontWeight.BOLD, 14));
+//        Label nameText = new Label(fullName);
+
+        HBox emailBox = new HBox(6);
+        emailBox.setAlignment(Pos.BOTTOM_LEFT);
+        Label emailLabel = new Label("Email: ");
+        emailLabel.setFont(Font.font("Inter", FontWeight.BOLD, 24));
+        Label emailText = new Label(email);
+        emailText.setFont(Font.font("Inter", FontWeight.NORMAL, 20));
+
+//        nameBox.getChildren().addAll(nameLabel, nameText);
+        emailBox.getChildren().addAll(emailLabel, emailText);
+        HBox.setMargin(emailBox, new Insets(0, 0, 0, 15));
+//        infoBox.getChildren().addAll(nameBox, emailBox);
+//        infoBox.setAlignment(Pos.CENTER);
+
+        // Download Buttons
+        HBox downloadBox = new HBox(30);
+        Button cvButton = new Button("Cv", new ImageView(new Image(Objects.requireNonNull(getClass().getResource("/com/example/jobseeker/download.png")).toExternalForm())));
+        Button coverButton = new Button("Lettre", new ImageView(new Image(Objects.requireNonNull(getClass().getResource("/com/example/jobseeker/download.png")).toExternalForm())));
+
+        cvButton.getStyleClass().add("download-button");
+        coverButton.getStyleClass().add("download-button");
+
+        cvButton.setOnAction(e -> {
+            downloadFile(jobApplication.getCvFile(),
+                    jobApplication.getCvFilename(),
+                    jobApplication.getCvFiletype(),
+                    cvButton);
+        });
+
+        coverButton.setOnAction(e -> {
+            downloadFile(jobApplication.getCoverLetterFile(),
+                    jobApplication.getCoverLetterFilename(),
+                    jobApplication.getCoverLetterFiletype(),
+                    coverButton);
+        });
+
+        downloadBox.getChildren().addAll(cvButton, coverButton);
+        downloadBox.setAlignment(Pos.CENTER);
+
+        // Approve/Reject Buttons
+        HBox actionBox = new HBox(10);
+        Button approveBtn = new Button("Approve");
+        Button rejectBtn = new Button("Reject");
+
+        approveBtn.setPrefWidth(120);
+        rejectBtn.setPrefWidth(120);
+
+        approveBtn.getStyleClass().add("details-button-green");
+        rejectBtn.getStyleClass().add("details-button-red");
+
+        approveBtn.setOnAction(e -> {
+            System.out.println("Approve button pressed for jobId: " + jobApplication.getId());
+            boolean updated = jobApplicationViewModel.updateApplicationStatus(jobApplication.getId(), "APPROVED");
+            if (updated) {
+                showAlert(Alert.AlertType.INFORMATION, "Success", "Application approved successfully!");
+                approveBtn.setText("Approved");
+                approveBtn.setDisable(true);
+                rejectBtn.setText("Reject");
+                rejectBtn.setDisable(false);
+            } else {
+                showAlert(Alert.AlertType.ERROR, "Error", "Failed to approve application.");
+            }
+        });
+
+        rejectBtn.setOnAction(e -> {
+            boolean updated = jobApplicationViewModel.updateApplicationStatus(jobApplication.getId(), "REJECTED");
+            if (updated) {
+                showAlert(Alert.AlertType.INFORMATION, "Success", "Application rejected.");
+                rejectBtn.setText("Rejected");
+                rejectBtn.setDisable(true);
+                approveBtn.setText("Approve");
+                approveBtn.setDisable(false);
+            } else {
+                showAlert(Alert.AlertType.ERROR, "Error", "Failed to reject application.");
+            }
+        });
+
+        actionBox.setAlignment(Pos.CENTER);
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        actionBox.getChildren().addAll(spacer, approveBtn, rejectBtn);
+
+        card.getChildren().addAll(emailBox, downloadBox, actionBox);
+
+        return card;
+    }
+
+    private void downloadFile(byte[] fileBytes, String fileName, String fileType, Node sourceNode) {
+        if (fileBytes == null || fileBytes.length == 0) {
+            showAlert(Alert.AlertType.ERROR, "Error", "File data is not available.");
+            return;
+        }
+
+        // Create a file chooser dialog
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Save File");
+        fileChooser.setInitialFileName(fileName);
+
+        // Set extension filter based on file type
+        if (fileType != null && fileType.equals("application/pdf")) {
+            fileChooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter("PDF Files", "*.pdf")
+            );
+        } else {
+            fileChooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter("All Files", "*.*")
+            );
+        }
+
+        // Show save dialog
+        Stage stage = (Stage) sourceNode.getScene().getWindow();
+        File file = fileChooser.showSaveDialog(stage);
+
+        if (file != null) {
+            try {
+                // Write bytes to the file
+                Files.write(file.toPath(), fileBytes);
+                showAlert(Alert.AlertType.INFORMATION, "Success", "File saved successfully!");
+            } catch (IOException ex) {
+                showAlert(Alert.AlertType.ERROR, "Error", "Failed to save file: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    private void showAlert(Alert.AlertType alertType, String title, String message) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
     }
 
 
-    // CREATE FUNCTION -> CARD  createSubmssionCard(JobApplication jobApplication){      }
+
 
 
 

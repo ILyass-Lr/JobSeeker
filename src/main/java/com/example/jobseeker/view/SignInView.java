@@ -63,6 +63,11 @@ public class SignInView extends VBox {
             }
         });
     }
+    public void clearView(){
+        emailTextField.setText("");
+        passwordField.setText("");
+
+    }
 
     private void setupView() {
         this.setMinHeight(1018);

@@ -178,6 +178,7 @@ public class JobOfferDAO {
                 }
             }
         }
+        System.out.println("Total number of job offers: " + jobOffers.size());
 
         return jobOffers;
     }

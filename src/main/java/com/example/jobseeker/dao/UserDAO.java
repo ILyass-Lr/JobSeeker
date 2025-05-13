@@ -70,6 +70,21 @@ public class UserDAO {
          }
     }
 
+    public String getUserEmail(int userId) throws SQLException{
+        String sql = "SELECT EMAIL FROM APP_USERS WHERE ID = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString("EMAIL");
+            }
+        }catch (SQLException e) {
+            System.err.println("Error retrieving email! : " + e.getMessage());
+
+        }
+        return null;
+    }
+
 
 
     // Find a user by email and password for authentication

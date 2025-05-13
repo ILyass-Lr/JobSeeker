@@ -23,6 +23,8 @@ public class JobApplicationViewModel {
     private final StringProperty jobProfile = new SimpleStringProperty("");
     private final StringProperty errorMessage = new SimpleStringProperty();
     private Map<Integer, JobApplicationViewModel.AppSub> submmittedApplications = new HashMap<Integer, JobApplicationViewModel.AppSub>();
+
+   // private List<JobApplication> applications;
     static public enum AppSub { SUBMITTED, APPROVED, REJECTED }
     public void loadSubmissions(int userId) throws SQLException {
         submmittedApplications.putAll(jobApplicationDAO.loadSubmmittedApplications(userId));
@@ -33,6 +35,9 @@ public class JobApplicationViewModel {
         return submmittedApplications;
     }
 
+//    public List<JobApplication> getApplications() {
+//        return applications;
+//    }
 
 
     public String getContactNumber() {
@@ -63,6 +68,10 @@ public class JobApplicationViewModel {
     public JobApplicationViewModel(JobApplicationDAO jobApplicationDAO, UserDAO userDAO) {
         this.jobApplicationDAO = jobApplicationDAO;
         this.userDAO = userDAO;
+    }
+
+    public String getUserEmail(int userId) throws SQLException {
+        return userDAO.getUserEmail(userId);
     }
 
 
@@ -172,7 +181,9 @@ public class JobApplicationViewModel {
                     coverLetterFileBytes,
                     coverLetterFilename,
                     coverLetterFiletype,
-                    "SUBMITTED" // default status
+                    "SUBMITTED",
+                    userId,
+                    0
             );
 
             // Try to insert into the database
@@ -195,7 +206,12 @@ public class JobApplicationViewModel {
 
     }
 
+    public List<JobApplication> getApplications(int jobOfferId) {
+       return jobApplicationDAO.getApplications(jobOfferId);
+    }
+
     public List<JobApplication> getCandidateApplications(int candidateId) {
+
         return List.of(jobApplicationDAO.getApplicationsByCandidate(candidateId));
     }
 

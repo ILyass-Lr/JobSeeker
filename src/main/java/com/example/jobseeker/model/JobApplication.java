@@ -5,7 +5,7 @@ import java.sql.Timestamp;
 public class JobApplication {
     private int id;
     //private int jobId;
-    //private int candidateId;
+    private int candidateId;
     private Timestamp applyDate;
     private byte[] cvFile;
     private String cvFilename;
@@ -15,9 +15,10 @@ public class JobApplication {
     private String coverLetterFiletype;
     private String status;
 
-    public JobApplication(Timestamp applyDate, byte[] cvFile, String cvFilename, String cvFiletype, byte[] coverLetterFile, String coverLetterFilename, String coverLetterFiletype, String status) {
+    public JobApplication(Timestamp applyDate, byte[] cvFile, String cvFilename, String cvFiletype, byte[] coverLetterFile, String coverLetterFilename, String coverLetterFiletype, String status, int candidateId, int id) {
         //this.jobId = jobId;
-        //this.candidateId = candidateId;
+
+        this.candidateId = candidateId;
         this.applyDate = applyDate;
         this.cvFile = cvFile;
         this.cvFilename = cvFilename;
@@ -26,6 +27,15 @@ public class JobApplication {
         this.coverLetterFilename = coverLetterFilename;
         this.coverLetterFiletype = coverLetterFiletype;
         this.status = status;
+        this.id = id;
+    }
+
+    public int getCandidateId() {
+        return candidateId;
+    }
+
+    public void setCandidateId(int candidateId) {
+        this.candidateId = candidateId;
     }
 
 

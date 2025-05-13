@@ -13,6 +13,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.application.Application;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -56,6 +57,7 @@ public class Dashboard extends Application {
     static public SignInView signInView;
     static public SignUpView signUpView;
     static public JobOffersPage jobOffersPage;
+    static public  JobListingView jobListingView;
 
     @Override
     public void start(Stage stage) throws SQLException {
@@ -80,7 +82,7 @@ public class Dashboard extends Application {
         signInView = new SignInView(signInViewModel, this);
         signUpView = new SignUpView(signUpViewModel, this);
         jobOffersPage = new JobOffersPage(this, jobOfferViewModel, applicationViewModel);
-
+        jobListingView = new JobListingView(this, jobOfferViewModel,applicationViewModel );
         // Initialize all possible pages
         initializeAllPages(jobOfferViewModel, companyViewModel, signInViewModel, applicationViewModel);
 
@@ -131,7 +133,7 @@ public class Dashboard extends Application {
 
         // Recruiter specific pages
         pages.put("Create Job Offer", new CreateJobOfferView(this));
-        pages.put("My Job Listings", new JobListingView(this, jobOfferViewModel,applicationViewModel ));
+        pages.put("My Job Listings", jobListingView);
     }
 
     private void initializeRolePages() {
@@ -168,11 +170,14 @@ public class Dashboard extends Application {
 
         if (page != null) {
             if(pageName.equals("Saved Job Offers") || pageName.equals("Job Offers") || pageName.equals("My Job Listings")) {
+                ((JobOffersList) page).loadData();
                 if (pageName.equals("Saved Job Offers")) {
                     ((BookmarkedJobOffersPage)page).refreshBookmarkedJobs();
                 }else if (pageName.equals("Job Offers")) {
 
                     jobOffersPage.updateUIAfterFiltering();
+                }else  if(pageName.equals("My Job Listings")) {
+                    jobListingView.initialize();
                 }
                 contentPane.setContent(page);
             } else if (pageName.equals("Sign up - Sign in")) {
@@ -312,6 +317,51 @@ public class Dashboard extends Application {
             });
 
             sideBar.getChildren().add(clickableIcon);
+
+        }
+        if(!isUserInRole(UserRole.NONE)){
+            ImageView logoutIcon = loadIcon("Logout");
+            Button logoutButton = new Button("Logout", logoutIcon);
+            logoutButton.setText("");
+            logoutButton.setFont(Font.font("Inter", FontWeight.BOLD, 22));
+            logoutButton.getStyleClass().add("sidebar-button");
+            logoutButton.setMaxWidth(Double.MAX_VALUE);
+            logoutButton.setAlignment(Pos.CENTER_LEFT);
+            logoutButton.setTextFill(Color.web("#7B4B94"));
+            clickedButtons.put(logoutButton, false);
+            buttonNamePair.put(logoutButton, "Logout");
+
+            logoutButton.setOnAction(event -> {
+                try {
+                    handleButtonClick(logoutButton, sideBar);
+                    logout();
+                } catch (SQLException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            logoutButton.setOnMouseEntered(_ -> {
+                if (!clickedButtons.get(logoutButton)) {
+                    Image originalImage = ((ImageView)logoutButton.getGraphic()).getImage();
+                    Image coloredImage = changeImageColor(originalImage, Color.web("#CE7AFA"));
+                    ImageView newImage = new ImageView(coloredImage);
+                    logoutButton.setGraphic(newImage);
+                    logoutButton.setUnderline(true);
+                    logoutButton.setTextFill(Color.web("#CE7AFA"));
+                    logoutButton.setText(buttonNamePair.get(logoutButton));
+                    logoutButton.setFont(Font.font("Inter", FontWeight.BOLD, 22));
+                    logoutButton.setUnderline(true);
+                }
+            });
+
+            logoutButton.setOnMouseExited(_ -> {
+                if (!clickedButtons.get(logoutButton)) {
+                    logoutButton.setGraphic(logoutIcon);
+                    logoutButton.setUnderline(false);
+                    logoutButton.setTextFill(Color.web("#7B4B94"));
+                }
+            });
+            sideBar.getChildren().add(logoutButton);
+            VBox.setMargin(logoutButton, new Insets(25, 0, 0, 0));
         }
 
         // Add mouse enter/exit handlers for the entire sidebar
@@ -319,6 +369,22 @@ public class Dashboard extends Application {
         sideBar.setOnMouseExited(e -> collapseSidebar());
 
         return sideBar;
+    }
+    private void logout() {
+        // Clear current user
+        setCurrentUser(null);
+
+        // Additional logout logic (clear session, reset UI, etc.)
+        // For example:
+        signUpView.clearView();
+        signInView.clearView();
+
+        try {
+            // Switch to login page or home page
+            switchPage("Sign up - Sign in");
+        } catch (SQLException e) {
+            System.err.println("Error during logout: " + e.getMessage());
+        }
     }
 
     // Helper method to load icons, with fallback handling

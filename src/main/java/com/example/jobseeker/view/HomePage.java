@@ -372,7 +372,9 @@ public class HomePage extends Page {
         button3.setPrefWidth(318);
         button3.setPrefHeight(55);
         button3.getStyleClass().add("section-button");
+        button3.setDisable(!dashboard.isUserInRole(Dashboard.UserRole.CANDIDATE));
         button3.onActionProperty().set(event -> {
+
             try {
                 getDashboard().switchPage("Statistics");
             } catch (SQLException e) {
@@ -481,6 +483,7 @@ public class HomePage extends Page {
         button3.setPrefWidth(318);
         button3.setPrefHeight(55);
         button3.getStyleClass().add("section-button");
+        button3.setDisable(!dashboard.isUserInRole(Dashboard.UserRole.CANDIDATE));
         button3.onActionProperty().set(event -> {
             try {
                 getDashboard().switchPage("Companies");

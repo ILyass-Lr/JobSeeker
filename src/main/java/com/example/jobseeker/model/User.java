@@ -6,6 +6,7 @@ public class User {
     private final String password;
     private final String role;
 
+
     public User(String email, String password, String role) {
 
         this.email = email;
@@ -18,6 +19,9 @@ public class User {
     public String getEmail() {
         return email;
     }
+//    public String getName(){
+//        return email.split("@")[0].split(".")[0];
+//    }
 
     public String getPassword() {
         return password;
